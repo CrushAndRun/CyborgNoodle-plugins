@@ -1,0 +1,522 @@
+<html>
+<head>
+  <title>ports//irc/py-supybot-plugins/work/Supybot-plugins-20060723/Weather/plugin.py</title>
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<pre>
+<font color="#444444">###</font>
+<font color="#444444"># Copyright (c) 2005, James Vega</font>
+<font color="#444444"># All rights reserved.</font>
+<font color="#444444">#</font>
+<font color="#444444"># Redistribution and use in source and binary forms, with or without</font>
+<font color="#444444"># modification, are permitted provided that the following conditions are met:</font>
+<font color="#444444">#</font>
+<font color="#444444">#   * Redistributions of source code must retain the above copyright notice,</font>
+<font color="#444444">#     this list of conditions, and the following disclaimer.</font>
+<font color="#444444">#   * Redistributions in binary form must reproduce the above copyright notice,</font>
+<font color="#444444">#     this list of conditions, and the following disclaimer in the</font>
+<font color="#444444">#     documentation and/or other materials provided with the distribution.</font>
+<font color="#444444">#   * Neither the name of the author of this software nor the name of</font>
+<font color="#444444">#     contributors to this software may be used to endorse or promote products</font>
+<font color="#444444">#     derived from this software without specific prior written consent.</font>
+<font color="#444444">#</font>
+<font color="#444444"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;</font>
+<font color="#444444"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</font>
+<font color="#444444"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</font>
+<font color="#444444"># ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE</font>
+<font color="#444444"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</font>
+<font color="#444444"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</font>
+<font color="#444444"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</font>
+<font color="#444444"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</font>
+<font color="#444444"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</font>
+<font color="#444444"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</font>
+<font color="#444444"># POSSIBILITY OF SUCH DAMAGE.</font>
+<font color="#444444">###</font>
+
+<strong>import</strong> <font color="#2040a0">re</font>
+
+<strong>import</strong> <font color="#2040a0">rssparser</font>
+<strong>import</strong> <font color="#2040a0">BeautifulSoup</font>
+
+<strong>import</strong> <font color="#2040a0">supybot</font>.<font color="#2040a0">conf</font> <font color="#2040a0">as</font> <font color="#2040a0">conf</font>
+<strong>import</strong> <font color="#2040a0">supybot</font>.<font color="#2040a0">utils</font> <font color="#2040a0">as</font> <font color="#2040a0">utils</font>
+<strong>from</strong> <font color="#2040a0">supybot</font>.<font color="#2040a0">commands</font> <strong>import</strong> <font color="4444FF">*</font>
+<strong>import</strong> <font color="#2040a0">supybot</font>.<font color="#2040a0">ircutils</font> <font color="#2040a0">as</font> <font color="#2040a0">ircutils</font>
+<strong>import</strong> <font color="#2040a0">supybot</font>.<font color="#2040a0">callbacks</font> <font color="#2040a0">as</font> <font color="#2040a0">callbacks</font>
+
+
+<font color="#2040a0">unitAbbrevs</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">abbrev</font><font color="4444FF">(</font><font color="4444FF">[</font><font color="#008000">'Fahrenheit'</font>, <font color="#008000">'Celsius'</font>, <font color="#008000">'Centigrade'</font>, <font color="#008000">'Kelvin'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+<font color="#2040a0">unitAbbrevs</font><font color="4444FF">[</font><font color="#008000">'C'</font><font color="4444FF">]</font> <font color="4444FF">=</font> <font color="#008000">'Celsius'</font>
+<font color="#2040a0">unitAbbrevs</font><font color="4444FF">[</font><font color="#008000">'Ce'</font><font color="4444FF">]</font> <font color="4444FF">=</font> <font color="#008000">'Celsius'</font>
+
+<font color="#2040a0">noLocationError</font> <font color="4444FF">=</font> <font color="#008000">'No such location could be found.'</font>
+<strong>class</strong> <font color="#2040a0">NoLocation</font><font color="4444FF">(</font><font color="#2040a0">callbacks</font>.<font color="#2040a0">Error</font><font color="4444FF">)</font><font color="4444FF">:</font>
+    <strong>pass</strong>
+
+<strong>class</strong> <font color="#2040a0">Weather</font><font color="4444FF">(</font><font color="#2040a0">callbacks</font>.<font color="#2040a0">Plugin</font><font color="4444FF">)</font><font color="4444FF">:</font>
+    <font color="#2040a0">weatherCommands</font> <font color="4444FF">=</font> <font color="4444FF">(</font><font color="#008000">'wunder'</font>, <font color="#008000">'wunder rss'</font>, <font color="#008000">'cnn'</font>, <font color="#008000">'ham'</font><font color="4444FF">)</font>
+    <font color="#2040a0">threaded</font> <font color="4444FF">=</font> <font color="#2040a0">True</font>
+    <font color="#2040a0">headers</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="#008000">'User-agent'</font><font color="4444FF">:</font>
+               <font color="#008000">'Mozilla/5.0 (compatible; U; utils.web python module)'</font><font color="4444FF"><strong>}</strong></font>
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> callCommand</font><font color="2040a0">(self, method, irc, msg, *args, **kwargs)</font>:
+</strong>        <strong>try</strong><font color="4444FF">:</font>
+            <font color="#2040a0">super</font><font color="4444FF">(</font><font color="#2040a0">Weather</font>, <font color="#2040a0">self</font><font color="4444FF">)</font>.<font color="#2040a0">callCommand</font><font color="4444FF">(</font><font color="#2040a0">method</font>, <font color="#2040a0">irc</font>, <font color="#2040a0">msg</font>, <font color="4444FF">*</font><font color="#2040a0">args</font>, <font color="4444FF">*</font><font color="4444FF">*</font><font color="#2040a0">kwargs</font><font color="4444FF">)</font>
+        <strong>except</strong> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">Error</font>, <font color="#2040a0">e</font><font color="4444FF">:</font>
+            <font color="#2040a0">irc</font>.<font color="#2040a0">error</font><font color="4444FF">(</font><font color="#2040a0">str</font><font color="4444FF">(</font><font color="#2040a0">e</font><font color="4444FF">)</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> _noLocation</font><font color="2040a0">()</font>:
+</strong>        <strong>raise</strong> <font color="#2040a0">NoLocation</font>, <font color="#2040a0">noLocationError</font>
+    <font color="#2040a0">_noLocation</font> <font color="4444FF">=</font> <font color="#2040a0">staticmethod</font><font color="4444FF">(</font><font color="#2040a0">_noLocation</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> weather</font><font color="2040a0">(self, irc, msg, args, location)</font>:
+</strong>        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;&lt;US zip code | US/Canada city, state | Foreign city, country&gt;
+
+        Returns the approximate weather conditions for a given city.
+        &quot;</font><font color="#008000">&quot;&quot;</font>
+        <font color="#2040a0">channel</font> <font color="4444FF">=</font> <font color="#2040a0">None</font>
+        <strong>if</strong> <font color="#2040a0">irc</font>.<font color="#2040a0">isChannel</font><font color="4444FF">(</font><font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font><font color="4444FF">:</font>
+            <font color="#2040a0">channel</font> <font color="4444FF">=</font> <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font>
+        <strong>if</strong> <strong>not</strong> <font color="#2040a0">location</font><font color="4444FF">:</font>
+            <font color="#2040a0">location</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">userValue</font><font color="4444FF">(</font><font color="#008000">'lastLocation'</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">prefix</font><font color="4444FF">)</font>
+        <strong>if</strong> <strong>not</strong> <font color="#2040a0">location</font><font color="4444FF">:</font>
+            <strong>raise</strong> <font color="#2040a0">callbacks</font>.<font color="#2040a0">ArgumentError</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">setUserValue</font><font color="4444FF">(</font><font color="#008000">'lastLocation'</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">prefix</font>,
+                          <font color="#2040a0">location</font>, <font color="#2040a0">ignoreNoUser</font><font color="4444FF">=</font><font color="#2040a0">True</font><font color="4444FF">)</font>
+        <font color="#2040a0">args</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#2040a0">location</font><font color="4444FF">]</font>
+        <font color="#2040a0">commandName</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">registryValue</font><font color="4444FF">(</font><font color="#008000">'command'</font>, <font color="#2040a0">channel</font><font color="4444FF">)</font>
+        <font color="#2040a0">firstCommand</font> <font color="4444FF">=</font> <font color="#2040a0">commandName</font>
+        <font color="#2040a0">command</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">getCommandMethod</font><font color="4444FF">(</font><font color="#2040a0">commandName</font>.<font color="#2040a0">split</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">)</font>
+        <strong>try</strong><font color="4444FF">:</font>
+            <font color="#2040a0">command</font><font color="4444FF">(</font><font color="#2040a0">irc</font>, <font color="#2040a0">msg</font>, <font color="#2040a0">args</font><font color="4444FF">[</font><font color="4444FF">:</font><font color="4444FF">]</font><font color="4444FF">)</font>
+        <strong>except</strong> <font color="#2040a0">NoLocation</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">log</font>.<font color="#2040a0">info</font><font color="4444FF">(</font><font color="#008000">'%s lookup failed, Trying others.'</font>, <font color="#2040a0">firstCommand</font><font color="4444FF">)</font>
+            <strong>for</strong> <font color="#2040a0">commandName</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">weatherCommands</font><font color="4444FF">:</font>
+                <strong>if</strong> <font color="#2040a0">commandName</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">firstCommand</font><font color="4444FF">:</font>
+                    <font color="#2040a0">self</font>.<font color="#2040a0">log</font>.<font color="#2040a0">info</font><font color="4444FF">(</font><font color="#008000">'Trying %s.'</font>, <font color="#2040a0">commandName</font><font color="4444FF">)</font>
+                    <strong>try</strong><font color="4444FF">:</font>
+                        <font color="#2040a0">command</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">getCommandMethod</font><font color="4444FF">(</font><font color="#2040a0">commandName</font>.<font color="#2040a0">split</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">)</font>
+                        <font color="#2040a0">command</font><font color="4444FF">(</font><font color="#2040a0">irc</font>, <font color="#2040a0">msg</font>, <font color="#2040a0">args</font><font color="4444FF">[</font><font color="4444FF">:</font><font color="4444FF">]</font><font color="4444FF">)</font>
+                        <font color="#2040a0">self</font>.<font color="#2040a0">log</font>.<font color="#2040a0">info</font><font color="4444FF">(</font><font color="#008000">'%s lookup succeeded.'</font>, <font color="#2040a0">commandName</font><font color="4444FF">)</font>
+                        <strong>return</strong>
+                    <strong>except</strong> <font color="#2040a0">NoLocation</font><font color="4444FF">:</font>
+                        <font color="#2040a0">self</font>.<font color="#2040a0">log</font>.<font color="#2040a0">info</font><font color="4444FF">(</font><font color="#008000">'%s lookup failed as backup.'</font>,
+                                      <font color="#2040a0">commandName</font><font color="4444FF">)</font>
+            <font color="#2040a0">irc</font>.<font color="#2040a0">error</font><font color="4444FF">(</font><font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">'Could not retrieve weather for %q.'</font>, <font color="#2040a0">location</font><font color="4444FF">)</font><font color="4444FF">)</font>
+    <font color="#2040a0">weather</font> <font color="4444FF">=</font> <font color="#2040a0">wrap</font><font color="4444FF">(</font><font color="#2040a0">weather</font>, <font color="4444FF">[</font><font color="#2040a0">additional</font><font color="4444FF">(</font><font color="#008000">'text'</font><font color="4444FF">)</font><font color="4444FF">]</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> _toCelsius</font><font color="2040a0">(temp, unit)</font>:
+</strong>        <strong>if</strong> <font color="#2040a0">unit</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#008000">'K'</font><font color="4444FF">:</font>
+            <strong>return</strong> <font color="#2040a0">temp</font> <font color="4444FF">-</font> <font color="#FF0000">273.15</font>
+        <strong>elif</strong> <font color="#2040a0">unit</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#008000">'F'</font><font color="4444FF">:</font>
+            <strong>return</strong> <font color="4444FF">(</font><font color="#2040a0">temp</font> <font color="4444FF">-</font> <font color="#FF0000">32</font><font color="4444FF">)</font> <font color="4444FF">*</font> <font color="#FF0000">5</font> /<font color="#FF0000">9</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <strong>return</strong> <font color="#2040a0">temp</font>
+    <font color="#2040a0">_toCelsius</font> <font color="4444FF">=</font> <font color="#2040a0">staticmethod</font><font color="4444FF">(</font><font color="#2040a0">_toCelsius</font><font color="4444FF">)</font>
+
+    <font color="#2040a0">_temp</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'(-?\d+)(.*?)(F|C)'</font><font color="4444FF">)</font>
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> _getTemp</font><font color="2040a0">(temp, deg, unit, chan)</font>:
+</strong>        <strong>assert</strong> <font color="#2040a0">unit</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">unit</font>.<font color="#2040a0">upper</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <strong>assert</strong> <font color="#2040a0">temp</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">temp</font><font color="4444FF">)</font>
+        <font color="#2040a0">default</font> <font color="4444FF">=</font> <font color="#2040a0">conf</font>.<font color="#2040a0">get</font><font color="4444FF">(</font><font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">temperatureUnit</font>, <font color="#2040a0">chan</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">unitAbbrevs</font><font color="4444FF">[</font><font color="#2040a0">unit</font><font color="4444FF">]</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">default</font><font color="4444FF">:</font>
+            <font color="#444444"># Short circuit if we're the same unit as the default.</font>
+            <strong>return</strong> <font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">'%0.1f%s%s'</font>, <font color="#2040a0">temp</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font>
+        <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">Weather</font>.<font color="#2040a0">_toCelsius</font><font color="4444FF">(</font><font color="#2040a0">temp</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font>
+        <font color="#2040a0">unit</font> <font color="4444FF">=</font> <font color="#008000">'C'</font>
+        <strong>if</strong> <font color="#2040a0">default</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#008000">'Kelvin'</font><font color="4444FF">:</font>
+            <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">temp</font> <font color="4444FF">+</font> <font color="#FF0000">273.15</font>
+            <font color="#2040a0">unit</font> <font color="4444FF">=</font> <font color="#008000">'K'</font>
+            <font color="#2040a0">deg</font> <font color="4444FF">=</font> <font color="#008000">' '</font>
+        <strong>elif</strong> <font color="#2040a0">default</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#008000">'Fahrenheit'</font><font color="4444FF">:</font>
+            <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">temp</font> <font color="4444FF">*</font> <font color="#FF0000">9</font> / <font color="#FF0000">5</font> <font color="4444FF">+</font> <font color="#FF0000">32</font>
+            <font color="#2040a0">unit</font> <font color="4444FF">=</font> <font color="#008000">'F'</font>
+        <strong>return</strong> <font color="#008000">'%0.1f%s%s'</font> <font color="4444FF">%</font> <font color="4444FF">(</font><font color="#2040a0">temp</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font>
+    <font color="#2040a0">_getTemp</font> <font color="4444FF">=</font> <font color="#2040a0">staticmethod</font><font color="4444FF">(</font><font color="#2040a0">_getTemp</font><font color="4444FF">)</font>
+
+    <font color="#2040a0">_hamLoc</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font>
+        <font color="#2040a0">r</font><font color="#008000">'&lt;td&gt;&lt;font size=&quot;4&quot; face=&quot;arial&quot;&gt;&lt;b&gt;'</font>
+        <font color="#2040a0">r</font><font color="#008000">'([^,]+), ([^,]+),(.*?)&lt;/b&gt;&lt;/font&gt;&lt;/td&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font>
+    <font color="#2040a0">_interregex</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font>
+        <font color="#2040a0">r</font><font color="#008000">'&lt;td&gt;&lt;font size=&quot;4&quot; face=&quot;arial&quot;&gt;&lt;b&gt;'</font>
+        <font color="#2040a0">r</font><font color="#008000">'([^,]+), (.*?)&lt;/b&gt;&lt;/font&gt;&lt;/td&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font>
+    <font color="#2040a0">_hamCond</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font>
+        <font color="#2040a0">r</font><font color="#008000">'&lt;td width=&quot;100%&quot; colspan=&quot;2&quot; align=&quot;center&quot;&gt;&lt;strong&gt;'</font>
+        <font color="#2040a0">r</font><font color="#008000">'&lt;font face=&quot;arial&quot;[^&gt;]+&gt;([^&lt;]+)&lt;/font&gt;&lt;/strong&gt;&lt;/td&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font>
+    <font color="#2040a0">_hamTemp</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font>
+        <font color="#2040a0">r</font><font color="#008000">'&lt;td valign=&quot;top&quot; align=&quot;right&quot;&gt;&lt;strong&gt;&lt;font face=&quot;arial&quot;[^&gt;]+&gt;'</font>
+        <font color="#2040a0">r</font><font color="#008000">'(-?\d+)(.*?)(F|C)&lt;/font&gt;&lt;/strong&gt;&lt;/td&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font>
+    <font color="#2040a0">_hamChill</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font>
+        <font color="#2040a0">r</font><font color="#008000">'Wind Chill:&lt;/font&gt;&lt;/strong&gt;&lt;/td&gt;\s+&lt;td align=&quot;right&quot;&gt;'</font>
+        <font color="#2040a0">r</font><font color="#008000">'&lt;font face=&quot;arial&quot;[^&gt;]+&gt;([^N][^&lt;]+)&lt;/font&gt;&lt;/td&gt;'</font>,
+         <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+    <font color="#2040a0">_hamHeat</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font>
+        <font color="#2040a0">r</font><font color="#008000">'Heat Index:&lt;/font&gt;&lt;/strong&gt;&lt;/td&gt;\s+&lt;td align=&quot;right&quot;&gt;'</font>
+        <font color="#2040a0">r</font><font color="#008000">'&lt;font face=&quot;arial&quot;[^&gt;]+&gt;([^N][^&lt;]+)&lt;/font&gt;&lt;/td&gt;'</font>,
+         <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+    <font color="#2040a0">_hamMultiLoc</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font>
+        <font color="#2040a0">r</font><font color="#008000">'Select from one of[^&lt;]+&lt;/b&gt;&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;\s*&lt;tr&gt;&lt;td&gt;&lt;font[^&gt;]+&gt;'</font>
+        <font color="#2040a0">r</font><font color="#008000">'\s*&lt;a href=&quot;(/cgi-bin/hw3[^&quot;]+)&quot;&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+    <font color="#444444"># States</font>
+    <font color="#2040a0">_realStates</font> <font color="4444FF">=</font> <font color="#2040a0">set</font><font color="4444FF">(</font><font color="4444FF">[</font><font color="#008000">'ak'</font>, <font color="#008000">'al'</font>, <font color="#008000">'ar'</font>, <font color="#008000">'az'</font>, <font color="#008000">'ca'</font>, <font color="#008000">'co'</font>, <font color="#008000">'ct'</font>,
+                       <font color="#008000">'dc'</font>, <font color="#008000">'de'</font>, <font color="#008000">'fl'</font>, <font color="#008000">'ga'</font>, <font color="#008000">'hi'</font>, <font color="#008000">'ia'</font>, <font color="#008000">'id'</font>,
+                       <font color="#008000">'il'</font>, <font color="#008000">'in'</font>, <font color="#008000">'ks'</font>, <font color="#008000">'ky'</font>, <font color="#008000">'la'</font>, <font color="#008000">'ma'</font>, <font color="#008000">'md'</font>,
+                       <font color="#008000">'me'</font>, <font color="#008000">'mi'</font>, <font color="#008000">'mn'</font>, <font color="#008000">'mo'</font>, <font color="#008000">'ms'</font>, <font color="#008000">'mt'</font>, <font color="#008000">'nc'</font>,
+                       <font color="#008000">'nd'</font>, <font color="#008000">'ne'</font>, <font color="#008000">'nh'</font>, <font color="#008000">'nj'</font>, <font color="#008000">'nm'</font>, <font color="#008000">'nv'</font>, <font color="#008000">'ny'</font>,
+                       <font color="#008000">'oh'</font>, <font color="#008000">'ok'</font>, <font color="#008000">'or'</font>, <font color="#008000">'pa'</font>, <font color="#008000">'ri'</font>, <font color="#008000">'sc'</font>, <font color="#008000">'sd'</font>,
+                       <font color="#008000">'tn'</font>, <font color="#008000">'tx'</font>, <font color="#008000">'ut'</font>, <font color="#008000">'va'</font>, <font color="#008000">'vt'</font>, <font color="#008000">'wa'</font>, <font color="#008000">'wi'</font>,
+                       <font color="#008000">'wv'</font>, <font color="#008000">'wy'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+    <font color="#444444"># Provinces.  (Province being a metric state measurement mind you. :D)</font>
+    <font color="#2040a0">_fakeStates</font> <font color="4444FF">=</font> <font color="#2040a0">set</font><font color="4444FF">(</font><font color="4444FF">[</font><font color="#008000">'ab'</font>, <font color="#008000">'bc'</font>, <font color="#008000">'mb'</font>, <font color="#008000">'nb'</font>, <font color="#008000">'nf'</font>, <font color="#008000">'ns'</font>, <font color="#008000">'nt'</font>,
+                       <font color="#008000">'nu'</font>, <font color="#008000">'on'</font>, <font color="#008000">'pe'</font>, <font color="#008000">'qc'</font>, <font color="#008000">'sk'</font>, <font color="#008000">'yk'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+    <font color="#444444"># Certain countries are expected to use a standard abbreviation</font>
+    <font color="#444444"># The weather we pull uses weird codes.  Map obvious ones here.</font>
+    <font color="#2040a0">_hamCountryMap</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="#008000">'uk'</font><font color="4444FF">:</font> <font color="#008000">'gb'</font><font color="4444FF"><strong>}</strong></font>
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> ham</font><font color="2040a0">(self, irc, msg, args, loc)</font>:
+</strong>        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;&lt;US zip code | US/Canada city, state | Foreign city, country&gt;
+
+        Returns the approximate weather conditions for a given city.
+        &quot;</font><font color="#008000">&quot;&quot;</font>
+        <font color="#444444">#If we received more than one argument, then we have received</font>
+        <font color="#444444">#a city and state argument that we need to process.</font>
+        <strong>if</strong> <font color="#008000">' '</font> <strong>in</strong> <font color="#2040a0">loc</font><font color="4444FF">:</font>
+            <font color="#444444">#If we received more than 1 argument, then we got a city with a</font>
+            <font color="#444444">#multi-word name.  ie ['Garden', 'City', 'KS'] instead of</font>
+            <font color="#444444">#['Liberal', 'KS'].  We join it together with a + to pass</font>
+            <font color="#444444">#to our query</font>
+            <font color="#2040a0">loc</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">str</font>.<font color="#2040a0">rsplit</font><font color="4444FF">(</font><font color="#2040a0">loc</font>, <font color="#2040a0">None</font>, <font color="#FF0000">1</font><font color="4444FF">)</font>
+            <font color="#2040a0">state</font> <font color="4444FF">=</font> <font color="#2040a0">loc</font>.<font color="#2040a0">pop</font><font color="4444FF">(</font><font color="4444FF">)</font>.<font color="#2040a0">lower</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">city</font> <font color="4444FF">=</font> <font color="#008000">'+'</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="#2040a0">loc</font><font color="4444FF">)</font>
+            <font color="#2040a0">city</font> <font color="4444FF">=</font> <font color="#2040a0">city</font>.<font color="#2040a0">rstrip</font><font color="4444FF">(</font><font color="#008000">','</font><font color="4444FF">)</font>.<font color="#2040a0">lower</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#444444">#We must break the States up into two sections.  The US and</font>
+            <font color="#444444">#Canada are the only countries that require a State argument.</font>
+            <strong>if</strong> <font color="#2040a0">state</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">_realStates</font><font color="4444FF">:</font>
+                <font color="#2040a0">country</font> <font color="4444FF">=</font> <font color="#008000">'us'</font>
+            <strong>elif</strong> <font color="#2040a0">state</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">_fakeStates</font><font color="4444FF">:</font>
+                <font color="#2040a0">country</font> <font color="4444FF">=</font> <font color="#008000">'ca'</font>
+            <strong>else</strong><font color="4444FF">:</font>
+                <font color="#2040a0">country</font> <font color="4444FF">=</font> <font color="#2040a0">state</font>
+                <font color="#2040a0">state</font> <font color="4444FF">=</font> <font color="#008000">''</font>
+            <strong>if</strong> <font color="#2040a0">country</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">_hamCountryMap</font>.<font color="#2040a0">keys</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                <font color="#2040a0">country</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_hamCountryMap</font><font color="4444FF">[</font><font color="#2040a0">country</font><font color="4444FF">]</font>
+            <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#008000">'http://www.hamweather.net/cgi-bin/hw3/hw3.cgi?'</font> \
+                  <font color="#008000">'pass=&amp;dpp=&amp;forecast=zandh&amp;config=&amp;'</font> \
+                  <font color="#008000">'place=%s&amp;state=%s&amp;country=%s'</font> <font color="4444FF">%</font> <font color="4444FF">(</font><font color="#2040a0">city</font>, <font color="#2040a0">state</font>, <font color="#2040a0">country</font><font color="4444FF">)</font>
+            <font color="#2040a0">html</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">self</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#008000">'was not found'</font> <strong>in</strong> <font color="#2040a0">html</font><font color="4444FF">:</font>
+                <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#008000">'http://www.hamweather.net/cgi-bin/hw3/hw3.cgi?'</font> \
+                      <font color="#008000">'pass=&amp;dpp=&amp;forecast=zandh&amp;config=&amp;'</font> \
+                      <font color="#008000">'place=%s&amp;state=&amp;country=%s'</font> <font color="4444FF">%</font> <font color="4444FF">(</font><font color="#2040a0">city</font>, <font color="#2040a0">state</font><font color="4444FF">)</font>
+                <font color="#2040a0">html</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">self</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+                <strong>if</strong> <font color="#008000">'was not found'</font> <strong>in</strong> <font color="#2040a0">html</font><font color="4444FF">:</font> <font color="#444444"># Still.</font>
+                    <font color="#2040a0">self</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <font color="#444444">#We received a single argument.  Zipcode or station id.</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <font color="#2040a0">zip</font> <font color="4444FF">=</font> <font color="#2040a0">loc</font>.<font color="#2040a0">replace</font><font color="4444FF">(</font><font color="#008000">','</font>, <font color="#008000">''</font><font color="4444FF">)</font>
+            <font color="#2040a0">zip</font> <font color="4444FF">=</font> <font color="#2040a0">zip</font>.<font color="#2040a0">lower</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#008000">'http://www.hamweather.net/cgi-bin/hw3/hw3.cgi?'</font> \
+                  <font color="#008000">'config=&amp;forecast=zandh&amp;pands=%s&amp;Submit=GO'</font> <font color="4444FF">%</font> <font color="#2040a0">zip</font>
+            <font color="#2040a0">html</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">self</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#008000">'was not found'</font> <strong>in</strong> <font color="#2040a0">html</font><font color="4444FF">:</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#008000">'Multiple Locations for'</font> <strong>in</strong> <font color="#2040a0">html</font><font color="4444FF">:</font>
+            <font color="#2040a0">m</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_hamMultiLoc</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">html</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">m</font><font color="4444FF">:</font>
+                <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#008000">'http://www.hamweather.net/%s'</font> <font color="4444FF">%</font> <font color="#2040a0">m</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>
+                <font color="#2040a0">html</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">self</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+            <strong>else</strong><font color="4444FF">:</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <font color="#2040a0">headData</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_hamLoc</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">html</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">headData</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+            <font color="4444FF">(</font><font color="#2040a0">city</font>, <font color="#2040a0">state</font>, <font color="#2040a0">country</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">headData</font>.<font color="#2040a0">groups</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <font color="#2040a0">headData</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_interregex</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">html</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">headData</font><font color="4444FF">:</font>
+                <font color="4444FF">(</font><font color="#2040a0">city</font>, <font color="#2040a0">state</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">headData</font>.<font color="#2040a0">groups</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <strong>else</strong><font color="4444FF">:</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <font color="#2040a0">city</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font><font color="4444FF">(</font><font color="#2040a0">city</font>.<font color="#2040a0">strip</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">)</font>
+        <font color="#2040a0">state</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font><font color="4444FF">(</font><font color="#2040a0">state</font>.<font color="#2040a0">strip</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">)</font>
+        <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_hamTemp</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">html</font><font color="4444FF">)</font>
+        <font color="#2040a0">convert</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">registryValue</font><font color="4444FF">(</font><font color="#008000">'convert'</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">temp</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+            <font color="4444FF">(</font><font color="#2040a0">temp</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">temp</font>.<font color="#2040a0">groups</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">deg</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font><font color="4444FF">(</font><font color="#2040a0">deg</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">convert</font><font color="4444FF">:</font>
+                <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_getTemp</font><font color="4444FF">(</font><font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">temp</font><font color="4444FF">)</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+            <strong>else</strong><font color="4444FF">:</font>
+                <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">deg</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">temp</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font><font color="4444FF">)</font>
+        <font color="#2040a0">conds</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_hamCond</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">html</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">conds</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+            <font color="#2040a0">conds</font> <font color="4444FF">=</font> <font color="#2040a0">conds</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>
+        <font color="#2040a0">index</font> <font color="4444FF">=</font> <font color="#008000">''</font>
+        <font color="#2040a0">chill</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_hamChill</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">html</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">chill</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+            <font color="#2040a0">chill</font> <font color="4444FF">=</font> <font color="#2040a0">chill</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>
+            <font color="#2040a0">chill</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font><font color="4444FF">(</font><font color="#2040a0">chill</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">convert</font><font color="4444FF">:</font>
+                <font color="#2040a0">tempsplit</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_temp</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">chill</font><font color="4444FF">)</font>
+                <strong>if</strong> <font color="#2040a0">tempsplit</font><font color="4444FF">:</font>
+                    <font color="4444FF">(</font><font color="#2040a0">chill</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">tempsplit</font>.<font color="#2040a0">groups</font><font color="4444FF">(</font><font color="4444FF">)</font>
+                    <font color="#2040a0">chill</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_getTemp</font><font color="4444FF">(</font><font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">chill</font><font color="4444FF">)</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font>,<font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">chill</font><font color="4444FF">[</font><font color="4444FF">:</font><font color="4444FF">-</font><font color="#FF0000">2</font><font color="4444FF">]</font><font color="4444FF">)</font> <font color="4444FF">&lt;</font> <font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">temp</font><font color="4444FF">[</font><font color="4444FF">:</font><font color="4444FF">-</font><font color="#FF0000">2</font><font color="4444FF">]</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                <font color="#2040a0">index</font> <font color="4444FF">=</font> <font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">' (Wind Chill: %s)'</font>, <font color="#2040a0">chill</font><font color="4444FF">)</font>
+        <font color="#2040a0">heat</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_hamHeat</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">html</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">heat</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+            <font color="#2040a0">heat</font> <font color="4444FF">=</font> <font color="#2040a0">heat</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>
+            <font color="#2040a0">heat</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font><font color="4444FF">(</font><font color="#2040a0">heat</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">convert</font><font color="4444FF">:</font>
+                <font color="#2040a0">tempsplit</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_temp</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">heat</font><font color="4444FF">)</font>
+                <strong>if</strong> <font color="#2040a0">tempsplit</font><font color="4444FF">:</font>
+                    <font color="4444FF">(</font><font color="#2040a0">heat</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">tempsplit</font>.<font color="#2040a0">groups</font><font color="4444FF">(</font><font color="4444FF">)</font>
+                    <strong>if</strong> <font color="#2040a0">convert</font><font color="4444FF">:</font>
+                        <font color="#2040a0">heat</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_getTemp</font><font color="4444FF">(</font><font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">heat</font><font color="4444FF">)</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font>,<font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">heat</font><font color="4444FF">[</font><font color="4444FF">:</font><font color="4444FF">-</font><font color="#FF0000">2</font><font color="4444FF">]</font><font color="4444FF">)</font> <font color="4444FF">&gt;</font> <font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">temp</font><font color="4444FF">[</font><font color="4444FF">:</font><font color="4444FF">-</font><font color="#FF0000">2</font><font color="4444FF">]</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                <font color="#2040a0">index</font> <font color="4444FF">=</font> <font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">' (Heat Index: %s)'</font>, <font color="#2040a0">heat</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">temp</font> <strong>and</strong> <font color="#2040a0">conds</font> <strong>and</strong> <font color="#2040a0">city</font> <strong>and</strong> <font color="#2040a0">state</font><font color="4444FF">:</font>
+            <font color="#2040a0">conds</font> <font color="4444FF">=</font> <font color="#2040a0">conds</font>.<font color="#2040a0">replace</font><font color="4444FF">(</font><font color="#008000">'Tsra'</font>, <font color="#008000">'Thunderstorms'</font><font color="4444FF">)</font>
+            <font color="#2040a0">conds</font> <font color="4444FF">=</font> <font color="#2040a0">conds</font>.<font color="#2040a0">replace</font><font color="4444FF">(</font><font color="#008000">'Ts'</font>, <font color="#008000">'Thunderstorms'</font><font color="4444FF">)</font>
+            <font color="#2040a0">s</font> <font color="4444FF">=</font> <font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">'The current temperature in %s, %s is %s%s. '</font>
+                       <font color="#008000">'Conditions: %s.'</font>,
+                       <font color="#2040a0">city</font>, <font color="#2040a0">state</font>, <font color="#2040a0">temp</font>, <font color="#2040a0">index</font>, <font color="#2040a0">conds</font><font color="4444FF">)</font>
+            <font color="#2040a0">irc</font>.<font color="#2040a0">reply</font><font color="4444FF">(</font><font color="#2040a0">s</font><font color="4444FF">)</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <font color="#2040a0">irc</font>.<font color="#2040a0">errorPossibleBug</font><font color="4444FF">(</font><font color="#008000">'The format of the page was odd.'</font><font color="4444FF">)</font>
+    <font color="#2040a0">ham</font> <font color="4444FF">=</font> <font color="#2040a0">wrap</font><font color="4444FF">(</font><font color="#2040a0">ham</font>, <font color="4444FF">[</font><font color="#008000">'text'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+
+    <font color="#2040a0">_cnnUrl</font> <font color="4444FF">=</font> <font color="#008000">'http://weather.cnn.com/weather/search?wsearch='</font>
+    <font color="#2040a0">_cnnFTemp</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'(-?\d+)(&amp;deg;)(F)&lt;/span&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+    <font color="#2040a0">_cnnCond</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'align=&quot;center&quot;&gt;&lt;b&gt;([^&lt;]+)&lt;/b&gt;&lt;/div&gt;&lt;/td&gt;'</font>,
+                          <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+    <font color="#2040a0">_cnnHumid</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'Rel. Humidity: &lt;b&gt;(\d+%)&lt;/b&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+    <font color="#2040a0">_cnnWind</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'Wind: &lt;b&gt;([^&lt;]+)&lt;/b&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+    <font color="#2040a0">_cnnLoc</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'&lt;title&gt;([^&lt;]+)&lt;/title&gt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+    <font color="#2040a0">_cnnMultiLoc</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'href=&quot;([^f]+forecast.jsp[^&quot;]+)'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font>
+    <font color="#444444"># Certain countries are expected to use a standard abbreviation</font>
+    <font color="#444444"># The weather we pull uses weird codes.  Map obvious ones here.</font>
+    <font color="#2040a0">_cnnCountryMap</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="#008000">'uk'</font><font color="4444FF">:</font> <font color="#008000">'en'</font>, <font color="#008000">'de'</font><font color="4444FF">:</font> <font color="#008000">'ge'</font><font color="4444FF"><strong>}</strong></font>
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> cnn</font><font color="2040a0">(self, irc, msg, args, loc)</font>:
+</strong>        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;&lt;US zip code | US/Canada city, state | Foreign city, country&gt;
+
+        Returns the approximate weather conditions for a given city.
+        &quot;</font><font color="#008000">&quot;&quot;</font>
+        <strong>if</strong> <font color="#008000">' '</font> <strong>in</strong> <font color="#2040a0">loc</font><font color="4444FF">:</font>
+            <font color="#444444">#If we received more than 1 argument, then we got a city with a</font>
+            <font color="#444444">#multi-word name.  ie ['Garden', 'City', 'KS'] instead of</font>
+            <font color="#444444">#['Liberal', 'KS'].</font>
+            <font color="#2040a0">loc</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">str</font>.<font color="#2040a0">rsplit</font><font color="4444FF">(</font><font color="#2040a0">loc</font>, <font color="#2040a0">None</font>, <font color="#FF0000">1</font><font color="4444FF">)</font>
+            <font color="#2040a0">state</font> <font color="4444FF">=</font> <font color="#2040a0">loc</font>.<font color="#2040a0">pop</font><font color="4444FF">(</font><font color="4444FF">)</font>.<font color="#2040a0">lower</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">city</font> <font color="4444FF">=</font> <font color="#008000">' '</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="#2040a0">loc</font><font color="4444FF">)</font>
+            <font color="#2040a0">city</font> <font color="4444FF">=</font> <font color="#2040a0">city</font>.<font color="#2040a0">rstrip</font><font color="4444FF">(</font><font color="#008000">','</font><font color="4444FF">)</font>.<font color="#2040a0">lower</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">state</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">_cnnCountryMap</font><font color="4444FF">:</font>
+                <font color="#2040a0">state</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_cnnCountryMap</font><font color="4444FF">[</font><font color="#2040a0">state</font><font color="4444FF">]</font>
+            <font color="#2040a0">loc</font> <font color="4444FF">=</font> <font color="#008000">' '</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="4444FF">[</font><font color="#2040a0">city</font>, <font color="#2040a0">state</font><font color="4444FF">]</font><font color="4444FF">)</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <font color="#444444">#We received a single argument.  Zipcode or station id.</font>
+            <font color="#2040a0">loc</font> <font color="4444FF">=</font> <font color="#2040a0">loc</font>.<font color="#2040a0">replace</font><font color="4444FF">(</font><font color="#008000">','</font>, <font color="#008000">''</font><font color="4444FF">)</font>
+        <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#008000">'%s%s'</font> <font color="4444FF">%</font> <font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">_cnnUrl</font>, <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">urlquote</font><font color="4444FF">(</font><font color="#2040a0">loc</font><font color="4444FF">)</font><font color="4444FF">)</font>
+        <font color="#2040a0">text</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">self</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#008000">'No search results'</font> <strong>in</strong> <font color="#2040a0">text</font> <strong>or</strong> \
+           <font color="#008000">'does not match a zip code'</font> <strong>in</strong> <font color="#2040a0">text</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <strong>elif</strong> <font color="#008000">'several matching locations for'</font> <strong>in</strong> <font color="#2040a0">text</font><font color="4444FF">:</font>
+            <font color="#2040a0">m</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_cnnMultiLoc</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">m</font><font color="4444FF">:</font>
+                <font color="#2040a0">text</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">m</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">self</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+            <strong>else</strong><font color="4444FF">:</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <font color="#2040a0">location</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_cnnLoc</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+        <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_cnnFTemp</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+        <font color="#2040a0">conds</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_cnnCond</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+        <font color="#2040a0">humidity</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_cnnHumid</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+        <font color="#2040a0">wind</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_cnnWind</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+        <font color="#2040a0">convert</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">registryValue</font><font color="4444FF">(</font><font color="#008000">'convert'</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">location</font> <strong>and</strong> <font color="#2040a0">temp</font><font color="4444FF">:</font>
+            <font color="#2040a0">location</font> <font color="4444FF">=</font> <font color="#2040a0">location</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>
+            <font color="#2040a0">location</font> <font color="4444FF">=</font> <font color="#2040a0">location</font>.<font color="#2040a0">split</font><font color="4444FF">(</font><font color="#008000">'-'</font><font color="4444FF">)</font><font color="4444FF">[</font><font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">]</font>.<font color="#2040a0">strip</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="4444FF">(</font><font color="#2040a0">temp</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">temp</font>.<font color="#2040a0">groups</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">convert</font><font color="4444FF">:</font>
+                <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_getTemp</font><font color="4444FF">(</font><font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">temp</font><font color="4444FF">)</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+            <strong>else</strong><font color="4444FF">:</font>
+                <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">deg</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">temp</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <font color="#2040a0">resp</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">'The current temperature in %s is %s.'</font>,
+                           <font color="#2040a0">location</font>, <font color="#2040a0">temp</font><font color="4444FF">)</font><font color="4444FF">]</font>
+            <strong>if</strong> <font color="#2040a0">conds</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+                <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">'Conditions: %s.'</font>, <font color="#2040a0">conds</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">humidity</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+                <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">'Humidity: %s.'</font>, <font color="#2040a0">humidity</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">wind</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+                <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">'Wind: %s.'</font>, <font color="#2040a0">wind</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <font color="#2040a0">resp</font> <font color="4444FF">=</font> <font color="#2040a0">map</font><font color="4444FF">(</font><font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font>, <font color="#2040a0">resp</font><font color="4444FF">)</font>
+            <font color="#2040a0">irc</font>.<font color="#2040a0">reply</font><font color="4444FF">(</font><font color="#008000">' '</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="#2040a0">resp</font><font color="4444FF">)</font><font color="4444FF">)</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <font color="#2040a0">irc</font>.<font color="#2040a0">errorPossibleBug</font><font color="4444FF">(</font><font color="#008000">'Could not find weather information.'</font><font color="4444FF">)</font>
+    <font color="#2040a0">cnn</font> <font color="4444FF">=</font> <font color="#2040a0">wrap</font><font color="4444FF">(</font><font color="#2040a0">cnn</font>, <font color="4444FF">[</font><font color="#008000">'text'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+
+    <strong>class</strong> <font color="#2040a0">wunder</font><font color="4444FF">(</font><font color="#2040a0">callbacks</font>.<font color="#2040a0">Commands</font><font color="4444FF">)</font><font color="4444FF">:</font>
+        <font color="#2040a0">_backupUrl</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'&lt;a href=&quot;(/global/stations[^&quot;]+)&quot;&gt;'</font><font color="4444FF">)</font>
+
+        <font color="#2040a0">_wunderUrl</font> <font color="4444FF">=</font> <font color="#008000">'http://mobile.wunderground.com/cgi-bin/'</font> \
+                     <font color="#008000">'findweather/getForecast?query='</font>
+        <font color="#2040a0">_wunderSevere</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'font color=&quot;?#ff0000&quot;?&gt;([^&lt;]+)&lt;'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font>
+        <font color="#2040a0">_wunderMultiLoc</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'&lt;a href=&quot;([^&quot;]+)'</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font> <font color="4444FF">|</font> <font color="#2040a0">re</font>.<font color="#2040a0">S</font><font color="4444FF">)</font>
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> wunder</font><font color="2040a0">(self, irc, msg, args, loc)</font>:
+</strong>            <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;&lt;US zip code | US/Canada city, state | Foreign city, country&gt;
+
+            Returns the approximate weather conditions for a given city.
+            &quot;</font><font color="#008000">&quot;&quot;</font>
+            <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#008000">'%s%s'</font> <font color="4444FF">%</font> <font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">_wunderUrl</font>, <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">urlquote</font><font color="4444FF">(</font><font color="#2040a0">loc</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <font color="#2040a0">text</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">Weather</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#008000">'Search not found'</font> <strong>in</strong> <font color="#2040a0">text</font> <strong>or</strong> \
+               <font color="#2040a0">re</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'size=&quot;2&quot;&gt; Place &lt;/font&gt;'</font>, <font color="#2040a0">text</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                <font color="#2040a0">Weather</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#008000">'Place: Temperature'</font> <strong>in</strong> <font color="#2040a0">text</font><font color="4444FF">:</font>
+                <font color="#2040a0">m</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_backupUrl</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+                <strong>if</strong> <font color="#2040a0">m</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+                    <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#008000">'http://www.wunderground.com'</font> <font color="4444FF">+</font> <font color="#2040a0">m</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>
+                    <font color="#2040a0">text</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">Weather</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+                    <font color="#2040a0">self</font>.<font color="#2040a0">_rss</font><font color="4444FF">(</font><font color="#2040a0">irc</font>, <font color="#2040a0">text</font><font color="4444FF">)</font>
+                    <strong>return</strong>
+            <font color="#2040a0">severe</font> <font color="4444FF">=</font> <font color="#008000">''</font>
+            <font color="#2040a0">m</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_wunderSevere</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">m</font><font color="4444FF">:</font>
+                <font color="#2040a0">severe</font> <font color="4444FF">=</font> <font color="#2040a0">ircutils</font>.<font color="#2040a0">bold</font><font color="4444FF">(</font><font color="#2040a0">format</font><font color="4444FF">(</font><font color="#008000">'  %s'</font>, <font color="#2040a0">m</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <font color="#2040a0">soup</font> <font color="4444FF">=</font> <font color="#2040a0">BeautifulSoup</font>.<font color="#2040a0">BeautifulSoup</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">soup</font>.<font color="#2040a0">feed</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+            <font color="#444444"># Get the table with all the weather info</font>
+            <font color="#2040a0">table</font> <font color="4444FF">=</font> <font color="#2040a0">soup</font>.<font color="#2040a0">first</font><font color="4444FF">(</font><font color="#008000">'table'</font>, <font color="4444FF"><strong>{</strong></font><font color="#008000">'border'</font><font color="4444FF">:</font><font color="#008000">'1'</font><font color="4444FF"><strong>}</strong></font><font color="4444FF">)</font>
+            <strong>if</strong> <strong>not</strong> <font color="#2040a0">table</font><font color="4444FF">:</font>
+                <font color="#2040a0">Weather</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">trs</font> <font color="4444FF">=</font> <font color="#2040a0">table</font>.<font color="#2040a0">fetch</font><font color="4444FF">(</font><font color="#008000">'tr'</font><font color="4444FF">)</font>
+            <font color="4444FF">(</font><font color="#2040a0">time</font>, <font color="#2040a0">location</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">trs</font>.<font color="#2040a0">pop</font><font color="4444FF">(</font><font color="#FF0000">0</font><font color="4444FF">)</font>.<font color="#2040a0">fetch</font><font color="4444FF">(</font><font color="#008000">'b'</font><font color="4444FF">)</font>
+            <font color="#2040a0">time</font> <font color="4444FF">=</font> <font color="#2040a0">time</font>.<font color="#2040a0">string</font>
+            <font color="#2040a0">location</font> <font color="4444FF">=</font> <font color="#2040a0">location</font>.<font color="#2040a0">string</font>
+            <font color="#2040a0">info</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="4444FF"><strong>}</strong></font>
+<strong>           <font color="ff0000"> def</font><font color="ff0000"> isText</font><font color="2040a0">(t)</font>:
+</strong>                <strong>return</strong> <strong>not</strong> <font color="#2040a0">isinstance</font><font color="4444FF">(</font><font color="#2040a0">t</font>, <font color="#2040a0">BeautifulSoup</font>.<font color="#2040a0">NavigableText</font><font color="4444FF">)</font> \
+                       <strong>and</strong> <font color="#2040a0">t</font>.<font color="#2040a0">contents</font>
+<strong>           <font color="ff0000"> def</font><font color="ff0000"> getText</font><font color="2040a0">(t)</font>:
+</strong>                <font color="#2040a0">s</font> <font color="4444FF">=</font> <font color="#2040a0">t</font>.<font color="#2040a0">string</font>
+                <strong>if</strong> <font color="#2040a0">s</font> <strong>is</strong> <font color="#2040a0">BeautifulSoup</font>.<font color="#2040a0">Null</font><font color="4444FF">:</font>
+                    <font color="#2040a0">t</font> <font color="4444FF">=</font> <font color="#2040a0">t</font>.<font color="#2040a0">contents</font>
+                    <font color="#2040a0">num</font> <font color="4444FF">=</font> <font color="#2040a0">t</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font>.<font color="#2040a0">string</font>
+                    <font color="#2040a0">units</font> <font color="4444FF">=</font> <font color="#2040a0">t</font><font color="4444FF">[</font><font color="#FF0000">1</font><font color="4444FF">]</font>.<font color="#2040a0">string</font>
+                    <font color="#444444"># htmlToText strips leading whitespace, so we have to</font>
+                    <font color="#444444"># handle strings with &amp;nbsp; differently.</font>
+                    <strong>if</strong> <font color="#2040a0">units</font>.<font color="#2040a0">startswith</font><font color="4444FF">(</font><font color="#008000">'&amp;nbsp;'</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                        <font color="#2040a0">units</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font><font color="4444FF">(</font><font color="#2040a0">units</font><font color="4444FF">)</font>
+                        <font color="#2040a0">s</font> <font color="4444FF">=</font> <font color="#008000">' '</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">num</font>, <font color="#2040a0">units</font><font color="4444FF">)</font><font color="4444FF">)</font>
+                    <strong>else</strong><font color="4444FF">:</font>
+                        <font color="#2040a0">units</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font><font color="4444FF">(</font><font color="#2040a0">units</font><font color="4444FF">)</font>
+                        <font color="#2040a0">s</font> <font color="4444FF">=</font> <font color="#008000">' '</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">num</font>, <font color="#2040a0">units</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font>, <font color="#2040a0">units</font><font color="4444FF">[</font><font color="#FF0000">1</font><font color="4444FF">:</font><font color="4444FF">]</font><font color="4444FF">)</font><font color="4444FF">)</font>
+                <strong>return</strong> <font color="#2040a0">s</font>
+            <strong>for</strong> <font color="#2040a0">tr</font> <strong>in</strong> <font color="#2040a0">trs</font><font color="4444FF">:</font>
+                <font color="#2040a0">k</font> <font color="4444FF">=</font> <font color="#2040a0">tr</font>.<font color="#2040a0">td</font>.<font color="#2040a0">string</font>
+                <font color="#2040a0">v</font> <font color="4444FF">=</font> <font color="#2040a0">filter</font><font color="4444FF">(</font><font color="#2040a0">isText</font>, <font color="#2040a0">tr</font>.<font color="#2040a0">fetch</font><font color="4444FF">(</font><font color="#008000">'td'</font><font color="4444FF">)</font><font color="4444FF">[</font><font color="#FF0000">1</font><font color="4444FF">]</font>.<font color="#2040a0">contents</font><font color="4444FF">)</font>
+                <font color="#2040a0">value</font> <font color="4444FF">=</font> <font color="#2040a0">map</font><font color="4444FF">(</font><font color="#2040a0">getText</font>, <font color="#2040a0">v</font><font color="4444FF">)</font>
+                <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#2040a0">k</font><font color="4444FF">]</font> <font color="4444FF">=</font> <font color="#008000">' '</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="#2040a0">value</font><font color="4444FF">)</font>
+            <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Temperature'</font><font color="4444FF">]</font>
+            <font color="#2040a0">convert</font> <font color="4444FF">=</font> <font color="#2040a0">conf</font>.<font color="#2040a0">get</font><font color="4444FF">(</font><font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">convert</font>,
+                               <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">location</font> <strong>and</strong> <font color="#2040a0">temp</font><font color="4444FF">:</font>
+                <font color="4444FF">(</font><font color="#2040a0">temp</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">temp</font>.<font color="#2040a0">split</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">[</font><font color="#FF0000">3</font><font color="4444FF">:</font><font color="4444FF">]</font> <font color="#444444"># We only want temp format</font>
+                <strong>if</strong> <font color="#2040a0">convert</font><font color="4444FF">:</font>
+                    <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">Weather</font>.<font color="#2040a0">_getTemp</font><font color="4444FF">(</font><font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">temp</font><font color="4444FF">)</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+                <strong>else</strong><font color="4444FF">:</font>
+                    <font color="#2040a0">temp</font> <font color="4444FF">=</font> <font color="#2040a0">deg</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">temp</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font><font color="4444FF">)</font>
+                <font color="#2040a0">resp</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#008000">'The current temperature in %s is %s (%s).'</font> <font color="4444FF">%</font>\
+                        <font color="4444FF">(</font><font color="#2040a0">location</font>, <font color="#2040a0">temp</font>, <font color="#2040a0">time</font><font color="4444FF">)</font><font color="4444FF">]</font>
+                <font color="#2040a0">conds</font> <font color="4444FF">=</font> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Conditions'</font><font color="4444FF">]</font>
+                <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#008000">'Conditions: %s.'</font> <font color="4444FF">%</font> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Conditions'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+                <font color="#2040a0">humidity</font> <font color="4444FF">=</font> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Humidity'</font><font color="4444FF">]</font>
+                <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#008000">'Humidity: %s.'</font> <font color="4444FF">%</font> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Humidity'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+                <font color="#444444"># Apparently, the &quot;Dew Point&quot; and &quot;Wind&quot; categories are</font>
+                <font color="#444444"># occasionally set to &quot;-&quot; instead of an actual reading. So,</font>
+                <font color="#444444"># we'll just catch the ValueError from trying to unpack a tuple</font>
+                <font color="#444444"># of the wrong size.</font>
+                <strong>try</strong><font color="4444FF">:</font>
+                    <font color="4444FF">(</font><font color="#2040a0">dew</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Dew Point'</font><font color="4444FF">]</font>.<font color="#2040a0">split</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">[</font><font color="#FF0000">3</font><font color="4444FF">:</font><font color="4444FF">]</font>
+                    <strong>if</strong> <font color="#2040a0">convert</font><font color="4444FF">:</font>
+                        <font color="#2040a0">dew</font> <font color="4444FF">=</font> <font color="#2040a0">Weather</font>.<font color="#2040a0">_getTemp</font><font color="4444FF">(</font><font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">dew</font><font color="4444FF">)</font>, <font color="#2040a0">deg</font>,
+                                               <font color="#2040a0">unit</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+                    <strong>else</strong><font color="4444FF">:</font>
+                        <font color="#2040a0">dew</font> <font color="4444FF">=</font> <font color="#2040a0">deg</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">dew</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font><font color="4444FF">)</font>
+                    <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#008000">'Dew Point: %s.'</font> <font color="4444FF">%</font> <font color="#2040a0">dew</font><font color="4444FF">)</font>
+                <strong>except</strong> <font color="4444FF">(</font><font color="#2040a0">ValueError</font>, <font color="#2040a0">KeyError</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                    <strong>pass</strong>
+                <strong>try</strong><font color="4444FF">:</font>
+                    <font color="#2040a0">wind</font> <font color="4444FF">=</font> <font color="#008000">'Wind: %s at %s %s.'</font> <font color="4444FF">%</font> <font color="#2040a0">tuple</font><font color="4444FF">(</font><font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Wind'</font><font color="4444FF">]</font>.<font color="#2040a0">split</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">)</font>
+                    <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">wind</font><font color="4444FF">)</font>
+                <strong>except</strong> <font color="4444FF">(</font><font color="#2040a0">ValueError</font>, <font color="#2040a0">TypeError</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                    <strong>pass</strong>
+                <strong>try</strong><font color="4444FF">:</font>
+                    <font color="4444FF">(</font><font color="#2040a0">chill</font>, <font color="#2040a0">deg</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font> <font color="4444FF">=</font> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Windchill'</font><font color="4444FF">]</font>.<font color="#2040a0">split</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">[</font><font color="#FF0000">3</font><font color="4444FF">:</font><font color="4444FF">]</font>
+                    <strong>if</strong> <font color="#2040a0">convert</font><font color="4444FF">:</font>
+                        <font color="#2040a0">chill</font> <font color="4444FF">=</font> <font color="#2040a0">Weather</font>.<font color="#2040a0">_getTemp</font><font color="4444FF">(</font><font color="#2040a0">float</font><font color="4444FF">(</font><font color="#2040a0">chill</font><font color="4444FF">)</font>, <font color="#2040a0">deg</font>,
+                                                 <font color="#2040a0">unit</font>, <font color="#2040a0">msg</font>.<font color="#2040a0">args</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font><font color="4444FF">)</font>
+                    <strong>else</strong><font color="4444FF">:</font>
+                        <font color="#2040a0">dew</font> <font color="4444FF">=</font> <font color="#2040a0">deg</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">chill</font>, <font color="#2040a0">unit</font><font color="4444FF">)</font><font color="4444FF">)</font>
+                    <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#008000">'Windchill: %s.'</font> <font color="4444FF">%</font> <font color="#2040a0">chill</font><font color="4444FF">)</font>
+                <strong>except</strong> <font color="4444FF">(</font><font color="#2040a0">ValueError</font>, <font color="#2040a0">KeyError</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                    <strong>pass</strong>
+                <strong>if</strong> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Pressure'</font><font color="4444FF">]</font><font color="4444FF">:</font>
+                    <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#008000">'Pressure: %s.'</font> <font color="4444FF">%</font> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'Pressure'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+                <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">severe</font><font color="4444FF">)</font>
+                <font color="#2040a0">resp</font> <font color="4444FF">=</font> <font color="#2040a0">map</font><font color="4444FF">(</font><font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font>, <font color="#2040a0">resp</font><font color="4444FF">)</font>
+                <font color="#2040a0">irc</font>.<font color="#2040a0">reply</font><font color="4444FF">(</font><font color="#008000">' '</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="#2040a0">resp</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <strong>else</strong><font color="4444FF">:</font>
+                <font color="#2040a0">Weather</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <font color="#2040a0">wunder</font> <font color="4444FF">=</font> <font color="#2040a0">wrap</font><font color="4444FF">(</font><font color="#2040a0">wunder</font>, <font color="4444FF">[</font><font color="#008000">'text'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+
+        <font color="#2040a0">_rsswunderUrl</font> <font color="4444FF">=</font> <font color="#008000">'http://www.wunderground.com/cgi-bin/findweather/'</font> \
+                        <font color="#008000">'getForecast?query=%s'</font>
+        <font color="#2040a0">_rsswunderfeed</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'&lt;link rel=&quot;alternate&quot;.*href=&quot;([^&quot;]+)&quot;&gt;'</font>,
+                                    <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font>
+        <font color="#2040a0">_rsswunderSevere</font> <font color="4444FF">=</font> <font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'font color=&quot;?#ff0000&quot;?&gt;&lt;b&gt;([^&lt;]+)&lt;'</font>,
+                                      <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font>
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> rss</font><font color="2040a0">(self, irc, msg, args, loc)</font>:
+</strong>            <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;&lt;US zip code | US/Canada city, state | Foreign city, country&gt;
+
+            Returns the approximate weather conditions for a given city.
+            &quot;</font><font color="#008000">&quot;&quot;</font>
+            <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_rsswunderUrl</font> <font color="4444FF">%</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">urlquote</font><font color="4444FF">(</font><font color="#2040a0">loc</font><font color="4444FF">)</font>
+            <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#2040a0">url</font>.<font color="#2040a0">replace</font><font color="4444FF">(</font><font color="#008000">'%20'</font>, <font color="#008000">'+'</font><font color="4444FF">)</font>
+            <font color="#2040a0">text</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">Weather</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#008000">'Search not found'</font> <strong>in</strong> <font color="#2040a0">text</font> <strong>or</strong> \
+               <font color="#2040a0">re</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">r</font><font color="#008000">'size=&quot;2&quot;&gt; Place &lt;/font&gt;'</font>, <font color="#2040a0">text</font>, <font color="#2040a0">re</font>.<font color="#2040a0">I</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                <font color="#2040a0">Weather</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#008000">'Search results for'</font> <strong>in</strong> <font color="#2040a0">text</font><font color="4444FF">:</font>
+                <font color="#2040a0">m</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_backupUrl</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+                <strong>if</strong> <font color="#2040a0">m</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">None</font><font color="4444FF">:</font>
+                    <font color="#2040a0">url</font> <font color="4444FF">=</font> <font color="#008000">'http://www.wunderground.com'</font> <font color="4444FF">+</font> <font color="#2040a0">m</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>
+                    <font color="#2040a0">text</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">url</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">Weather</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+                <strong>else</strong><font color="4444FF">:</font>
+                    <font color="#2040a0">Weather</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">_rss</font><font color="4444FF">(</font><font color="#2040a0">irc</font>, <font color="#2040a0">text</font><font color="4444FF">)</font>
+        <font color="#2040a0">rss</font> <font color="4444FF">=</font> <font color="#2040a0">wrap</font><font color="4444FF">(</font><font color="#2040a0">rss</font>, <font color="4444FF">[</font><font color="#008000">'text'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> _rss</font><font color="2040a0">(self, irc, text)</font>:
+</strong>            <font color="#2040a0">severe</font> <font color="4444FF">=</font> <font color="#008000">''</font>
+            <font color="#2040a0">m</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_rsswunderSevere</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">m</font><font color="4444FF">:</font>
+                <font color="#2040a0">severe</font> <font color="4444FF">=</font> <font color="#2040a0">ircutils</font>.<font color="#2040a0">bold</font><font color="4444FF">(</font><font color="#2040a0">m</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <font color="#2040a0">feed</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">_rsswunderfeed</font>.<font color="#2040a0">search</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+            <strong>if</strong> <strong>not</strong> <font color="#2040a0">feed</font><font color="4444FF">:</font>
+                <font color="#2040a0">Weather</font>.<font color="#2040a0">_noLocation</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">feed</font> <font color="4444FF">=</font> <font color="#2040a0">feed</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font>
+            <font color="#2040a0">rss</font> <font color="4444FF">=</font> <font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">getUrl</font><font color="4444FF">(</font><font color="#2040a0">feed</font>, <font color="#2040a0">headers</font><font color="4444FF">=</font><font color="#2040a0">Weather</font>.<font color="#2040a0">headers</font><font color="4444FF">)</font>
+            <font color="#2040a0">info</font> <font color="4444FF">=</font> <font color="#2040a0">rssparser</font>.<font color="#2040a0">parse</font><font color="4444FF">(</font><font color="#2040a0">rss</font><font color="4444FF">)</font>
+            <font color="#2040a0">resp</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#2040a0">e</font><font color="4444FF">[</font><font color="#008000">'summary'</font><font color="4444FF">]</font> <strong>for</strong> <font color="#2040a0">e</font> <strong>in</strong> <font color="#2040a0">info</font><font color="4444FF">[</font><font color="#008000">'entries'</font><font color="4444FF">]</font><font color="4444FF">]</font>
+            <font color="#2040a0">resp</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#2040a0">s</font>.<font color="#2040a0">encode</font><font color="4444FF">(</font><font color="#008000">'utf-8'</font><font color="4444FF">)</font> <strong>for</strong> <font color="#2040a0">s</font> <strong>in</strong> <font color="#2040a0">resp</font><font color="4444FF">]</font>
+            <font color="#2040a0">resp</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">severe</font><font color="4444FF">)</font>
+            <font color="#2040a0">irc</font>.<font color="#2040a0">reply</font><font color="4444FF">(</font><font color="#2040a0">utils</font>.<font color="#2040a0">web</font>.<font color="#2040a0">htmlToText</font><font color="4444FF">(</font><font color="#008000">'; '</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="#2040a0">resp</font><font color="4444FF">)</font><font color="4444FF">)</font><font color="4444FF">)</font>
+
+<font color="#2040a0">Class</font> <font color="4444FF">=</font> <font color="#2040a0">Weather</font>
+
+
+<font color="#444444"># vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:</font>
+
+</pre>
+<hr>
+syntax highlighted by <a href="http://www.palfrader.org/code2html">Code2HTML</a>, v. 0.9.1
+</body>
+</html>

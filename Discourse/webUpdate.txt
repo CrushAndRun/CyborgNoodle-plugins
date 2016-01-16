@@ -1,0 +1,3 @@
+<div class="message"><b>Now:</b> something else</div>
+<div class="message"><b>Next:</b> check in soon for more content</div>
+<div class="message"><b>Soon:</b> s0ckpuppet will be covering energy sources, gas? still using it? why..we have greater tech in place but where is it and wtf.</div>

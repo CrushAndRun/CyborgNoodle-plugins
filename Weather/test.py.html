@@ -1,0 +1,123 @@
+<html>
+<head>
+  <title>ports//irc/py-supybot-plugins/work/Supybot-plugins-20060723/Weather/test.py</title>
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<pre>
+<font color="#444444">###</font>
+<font color="#444444"># Copyright (c) 2005, James Vega</font>
+<font color="#444444"># All rights reserved.</font>
+<font color="#444444">#</font>
+<font color="#444444"># Redistribution and use in source and binary forms, with or without</font>
+<font color="#444444"># modification, are permitted provided that the following conditions are met:</font>
+<font color="#444444">#</font>
+<font color="#444444">#   * Redistributions of source code must retain the above copyright notice,</font>
+<font color="#444444">#     this list of conditions, and the following disclaimer.</font>
+<font color="#444444">#   * Redistributions in binary form must reproduce the above copyright notice,</font>
+<font color="#444444">#     this list of conditions, and the following disclaimer in the</font>
+<font color="#444444">#     documentation and/or other materials provided with the distribution.</font>
+<font color="#444444">#   * Neither the name of the author of this software nor the name of</font>
+<font color="#444444">#     contributors to this software may be used to endorse or promote products</font>
+<font color="#444444">#     derived from this software without specific prior written consent.</font>
+<font color="#444444">#</font>
+<font color="#444444"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;</font>
+<font color="#444444"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</font>
+<font color="#444444"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</font>
+<font color="#444444"># ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE</font>
+<font color="#444444"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</font>
+<font color="#444444"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</font>
+<font color="#444444"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</font>
+<font color="#444444"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</font>
+<font color="#444444"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</font>
+<font color="#444444"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</font>
+<font color="#444444"># POSSIBILITY OF SUCH DAMAGE.</font>
+<font color="#444444">###</font>
+
+<strong>from</strong> <font color="#2040a0">supybot</font>.<font color="#2040a0">test</font> <strong>import</strong> <font color="4444FF">*</font>
+
+<strong>class</strong> <font color="#2040a0">WeatherTestCase</font><font color="4444FF">(</font><font color="#2040a0">PluginTestCase</font><font color="4444FF">)</font><font color="4444FF">:</font>
+    <font color="#2040a0">plugins</font> <font color="4444FF">=</font> <font color="4444FF">(</font><font color="#008000">'Weather'</font>,<font color="4444FF">)</font>
+    <strong>if</strong> <font color="#2040a0">network</font><font color="4444FF">:</font>
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> testHam</font><font color="2040a0">(self)</font>:
+</strong>            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'ham Columbus, OH'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'ham 43221'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotRegexp</font><font color="4444FF">(</font><font color="#008000">'ham Paris, FR'</font>, <font color="#008000">'Virginia'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertError</font><font color="4444FF">(</font><font color="#008000">'ham alsdkfjasdl, asdlfkjsadlfkj'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'ham London, uk'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'ham London, UK'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'ham Munich, de'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'ham Tucson, AZ'</font><font color="4444FF">)</font>
+            <font color="#444444"># &quot;Multiple locations found&quot; test</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'ham hell'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'ham sandwich'</font><font color="4444FF">)</font>
+
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> testCnn</font><font color="2040a0">(self)</font>:
+</strong>            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'cnn Columbus, OH'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'cnn 43221'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotRegexp</font><font color="4444FF">(</font><font color="#008000">'cnn Paris, FR'</font>, <font color="#008000">'Virginia'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertError</font><font color="4444FF">(</font><font color="#008000">'cnn alsdkfjasdl, asdlfkjsadlfkj'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'cnn London, uk'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'cnn London, UK'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'cnn Munich, de'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'cnn Tucson, AZ'</font><font color="4444FF">)</font>
+
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> testWunder</font><font color="2040a0">(self)</font>:
+</strong>            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'wunder Columbus, OH'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'wunder 43221'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotRegexp</font><font color="4444FF">(</font><font color="#008000">'wunder Paris, FR'</font>, <font color="#008000">'Virginia'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertError</font><font color="4444FF">(</font><font color="#008000">'wunder alsdkfjasdl, asdlfkjsadlfkj'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'wunder London, england'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'wunder Munich, germany'</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotError</font><font color="4444FF">(</font><font color="#008000">'wunder Tucson, AZ'</font><font color="4444FF">)</font>
+
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> testTemperatureUnit</font><font color="2040a0">(self)</font>:
+</strong>            <strong>try</strong><font color="4444FF">:</font>
+                <font color="#2040a0">orig</font> <font color="4444FF">=</font> <font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">temperatureUnit</font><font color="4444FF">(</font><font color="4444FF">)</font>
+                <font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">temperatureUnit</font>.<font color="#2040a0">setValue</font><font color="4444FF">(</font><font color="#008000">'F'</font><font color="4444FF">)</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">assertRegexp</font><font color="4444FF">(</font><font color="#008000">'cnn Columbus, OH'</font>, <font color="#2040a0">r</font><font color="#008000">'is -?\d+.F'</font><font color="4444FF">)</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">assertRegexp</font><font color="4444FF">(</font><font color="#008000">'ham Columbus, OH'</font>, <font color="#2040a0">r</font><font color="#008000">'is -?\d+.F'</font><font color="4444FF">)</font>
+                <font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">temperatureUnit</font>.<font color="#2040a0">setValue</font><font color="4444FF">(</font><font color="#008000">'C'</font><font color="4444FF">)</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">assertRegexp</font><font color="4444FF">(</font><font color="#008000">'cnn Columbus, OH'</font>, <font color="#2040a0">r</font><font color="#008000">'is -?\d+.C'</font><font color="4444FF">)</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">assertRegexp</font><font color="4444FF">(</font><font color="#008000">'ham Columbus, OH'</font>, <font color="#2040a0">r</font><font color="#008000">'is -?\d+.C'</font><font color="4444FF">)</font>
+                <font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">temperatureUnit</font>.<font color="#2040a0">setValue</font><font color="4444FF">(</font><font color="#008000">'K'</font><font color="4444FF">)</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">assertRegexp</font><font color="4444FF">(</font><font color="#008000">'cnn Columbus, OH'</font>, <font color="#2040a0">r</font><font color="#008000">'is -?\d+ K'</font><font color="4444FF">)</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">assertRegexp</font><font color="4444FF">(</font><font color="#008000">'ham Columbus, OH'</font>, <font color="#2040a0">r</font><font color="#008000">'is -?\d+ K'</font><font color="4444FF">)</font>
+            <strong>finally</strong><font color="4444FF">:</font>
+                <font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">temperatureUnit</font>.<font color="#2040a0">setValue</font><font color="4444FF">(</font><font color="#2040a0">orig</font><font color="4444FF">)</font>
+
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> testNoEscapingWebError</font><font color="2040a0">(self)</font>:
+</strong>            <font color="#2040a0">self</font>.<font color="#2040a0">assertNotRegexp</font><font color="4444FF">(</font><font color="#008000">'ham &quot;buenos aires&quot;'</font>, <font color="#008000">'WebError'</font><font color="4444FF">)</font>
+
+<strong>       <font color="ff0000"> def</font><font color="ff0000"> testWeatherRepliesWithBogusLocation</font><font color="2040a0">(self)</font>:
+</strong>            <font color="#2040a0">self</font>.<font color="#2040a0">assertRegexp</font><font color="4444FF">(</font><font color="#008000">'weather some place that doesn\'</font><font color="#2040a0">t</font> <font color="#2040a0">exist</font><font color="#008000">', r'</font>.<font color="#008000">')
+
+        def testConvertConfig(self):
+            try:
+                convert = conf.supybot.plugins.Weather.convert()
+                unit = conf.supybot.plugins.Weather.temperatureUnit()
+                conf.supybot.plugins.Weather.convert.setValue(False)
+                conf.supybot.plugins.Weather.temperatureUnit.setValue('</font><font color="#2040a0">C</font><font color="#008000">')
+                self.assertRegexp('</font><font color="#2040a0">ham</font> <font color="#2040a0">london</font>, <font color="#2040a0">gb</font><font color="#008000">', r'</font><font color="4444FF">-</font>?\<font color="#2040a0">d</font><font color="4444FF">+</font>.<font color="#2040a0">C</font><font color="#008000">')
+                self.assertRegexp('</font><font color="#2040a0">ham</font> <font color="#FF0000">02115</font><font color="#008000">', r'</font><font color="4444FF">-</font>?\<font color="#2040a0">d</font><font color="4444FF">+</font>.<font color="#2040a0">F</font><font color="#008000">')
+                conf.supybot.plugins.Weather.temperatureUnit.setValue('</font><font color="#2040a0">F</font><font color="#008000">')
+                self.assertRegexp('</font><font color="#2040a0">ham</font> <font color="#2040a0">london</font>, <font color="#2040a0">gb</font><font color="#008000">', r'</font><font color="4444FF">-</font>?\<font color="#2040a0">d</font><font color="4444FF">+</font>.<font color="#2040a0">C</font><font color="#008000">')
+                self.assertRegexp('</font><font color="#2040a0">ham</font> <font color="#FF0000">02115</font><font color="#008000">', r'</font><font color="4444FF">-</font>?\<font color="#2040a0">d</font><font color="4444FF">+</font>.<font color="#2040a0">F</font><font color="#008000">')
+                conf.supybot.plugins.Weather.convert.setValue(True)
+                conf.supybot.plugins.Weather.temperatureUnit.setValue('</font><font color="#2040a0">C</font><font color="#008000">')
+                self.assertRegexp('</font><font color="#2040a0">ham</font> <font color="#2040a0">london</font>, <font color="#2040a0">gb</font><font color="#008000">', r'</font><font color="4444FF">-</font>?\<font color="#2040a0">d</font><font color="4444FF">+</font>.<font color="#2040a0">C</font><font color="#008000">')
+                self.assertRegexp('</font><font color="#2040a0">ham</font> <font color="#FF0000">02115</font><font color="#008000">', r'</font><font color="4444FF">-</font>?\<font color="#2040a0">d</font><font color="4444FF">+</font>.<font color="#2040a0">C</font><font color="#008000">')
+                conf.supybot.plugins.Weather.temperatureUnit.setValue('</font><font color="#2040a0">F</font><font color="#008000">')
+                self.assertRegexp('</font><font color="#2040a0">ham</font> <font color="#2040a0">london</font>, <font color="#2040a0">gb</font><font color="#008000">', r'</font><font color="4444FF">-</font>?\<font color="#2040a0">d</font><font color="4444FF">+</font>.<font color="#2040a0">F</font><font color="#008000">')
+                self.assertRegexp('</font><font color="#2040a0">ham</font> <font color="#FF0000">02115</font><font color="#008000">', r'</font><font color="4444FF">-</font>?\<font color="#2040a0">d</font><font color="4444FF">+</font>.<font color="#2040a0">F</font>'<font color="4444FF">)</font>
+            <strong>finally</strong><font color="4444FF">:</font>
+                <font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">convert</font>.<font color="#2040a0">setValue</font><font color="4444FF">(</font><font color="#2040a0">convert</font><font color="4444FF">)</font>
+                <font color="#2040a0">conf</font>.<font color="#2040a0">supybot</font>.<font color="#2040a0">plugins</font>.<font color="#2040a0">Weather</font>.<font color="#2040a0">temperatureUnit</font>.<font color="#2040a0">setValue</font><font color="4444FF">(</font><font color="#2040a0">unit</font><font color="4444FF">)</font>
+
+
+<font color="#444444"># vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:</font>
+
+</pre>
+<hr>
+syntax highlighted by <a href="http://www.palfrader.org/code2html">Code2HTML</a>, v. 0.9.1
+</body>
+</html>

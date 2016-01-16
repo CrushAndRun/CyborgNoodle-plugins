@@ -1,0 +1,1092 @@
+<html>
+<head>
+  <title>ports//irc/py-supybot-plugins/work/Supybot-plugins-20060723/Weather/BeautifulSoup.py</title>
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<pre>
+<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;Beautiful Soup
+Elixir and Tonic
+&quot;</font><font color="#2040a0">The</font> <font color="#2040a0">Screen</font><font color="4444FF">-</font><font color="#2040a0">Scraper</font><font color="#008000">'s Friend&quot;
+v2.1.1
+http://www.crummy.com/software/BeautifulSoup/
+
+Beautiful Soup parses arbitrarily invalid XML- or HTML-like substance
+into a tree representation. It provides methods and Pythonic idioms
+that make it easy to search and modify the tree.
+
+A well-formed XML/HTML document will yield a well-formed data
+structure. An ill-formed XML/HTML document will yield a
+correspondingly ill-formed data structure. If your document is only
+locally well-formed, you can use this library to find and process the
+well-formed part of it. The BeautifulSoup class has heuristics for
+obtaining a sensible parse tree in the face of common HTML errors.
+
+Beautiful Soup has no external dependencies. It works with Python 2.2
+and up.
+
+Beautiful Soup defines classes for four different parsing strategies:
+
+ * BeautifulStoneSoup, for parsing XML, SGML, or your domain-specific
+   language that kind of looks like XML.
+
+ * BeautifulSoup, for parsing run-of-the-mill HTML code, be it valid
+   or invalid.
+
+ * ICantBelieveItsBeautifulSoup, for parsing valid but bizarre HTML
+   that trips up BeautifulSoup.
+
+ * BeautifulSOAP, for making it easier to parse XML documents that use
+   lots of subelements containing a single string, where you'</font><font color="#2040a0">d</font> <font color="#2040a0">prefer</font>
+   <font color="#2040a0">they</font> <font color="#2040a0">put</font> <font color="#2040a0">that</font> <font color="#2040a0">string</font> <font color="#2040a0">into</font> <font color="#2040a0">an</font> <font color="#2040a0">attribute</font> <font color="4444FF">(</font><font color="#2040a0">such</font> <font color="#2040a0">as</font> <font color="#2040a0">SOAP</font> <font color="#2040a0">messages</font><font color="4444FF">)</font>.
+
+<font color="#2040a0">You</font> <font color="#2040a0">can</font> <font color="#2040a0">subclass</font> <font color="#2040a0">BeautifulStoneSoup</font> <strong>or</strong> <font color="#2040a0">BeautifulSoup</font> <font color="#2040a0">to</font> <font color="#2040a0">create</font> <font color="#2040a0">a</font>
+<font color="#2040a0">parsing</font> <font color="#2040a0">strategy</font> <font color="#2040a0">specific</font> <font color="#2040a0">to</font> <font color="#2040a0">an</font> <font color="#2040a0">XML</font> <font color="#2040a0">schema</font> <strong>or</strong> <font color="#2040a0">a</font> <font color="#2040a0">particular</font> <font color="#2040a0">bizarre</font>
+<font color="#2040a0">HTML</font> <font color="#2040a0">document</font>. <font color="#2040a0">Typically</font> <font color="#2040a0">your</font> <font color="#2040a0">subclass</font> <font color="#2040a0">would</font> <font color="#2040a0">just</font> <font color="#2040a0">override</font>
+<font color="#2040a0">SELF_CLOSING_TAGS</font> <strong>and</strong>/<strong>or</strong> <font color="#2040a0">NESTABLE_TAGS</font>.
+<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+from __future__ import generators
+
+__author__ = &quot;</font><font color="#2040a0">Leonard</font> <font color="#2040a0">Richardson</font> <font color="4444FF">(</font><font color="#2040a0">leonardr</font>@<font color="#2040a0">segfault</font>.<font color="#2040a0">org</font><font color="4444FF">)</font><font color="#008000">&quot;
+__version__ = &quot;</font><font color="#FF0000">2.1</font><font color="#FF0000">.1</font><font color="#008000">&quot;
+__date__ = &quot;</font>$<font color="#2040a0">Date</font><font color="4444FF">:</font> <font color="#FF0000">2004</font>/<font color="#FF0000">10</font>/<font color="#FF0000">18</font> <font color="#FF0000">00</font><font color="4444FF">:</font><font color="#FF0000">14</font><font color="4444FF">:</font><font color="#FF0000">20</font> $<font color="#008000">&quot;
+__copyright__ = &quot;</font><font color="#2040a0">Copyright</font> <font color="4444FF">(</font><font color="#2040a0">c</font><font color="4444FF">)</font> <font color="#FF0000">2004</font><font color="4444FF">-</font><font color="#FF0000">2005</font> <font color="#2040a0">Leonard</font> <font color="#2040a0">Richardson</font><font color="#008000">&quot;
+__license__ = &quot;</font><font color="#2040a0">PSF</font><font color="#008000">&quot;
+
+from sgmllib import SGMLParser, SGMLParseError
+import types
+import re
+import sgmllib
+
+#This code makes Beautiful Soup able to parse XML with namespaces
+sgmllib.tagfind = re.compile('[a-zA-Z][-_.:a-zA-Z0-9]*')
+
+class NullType(object):
+
+    &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Similar</font> <font color="#2040a0">to</font> <font color="#2040a0">NoneType</font> <font color="#2040a0">with</font> <font color="#2040a0">a</font> <font color="#2040a0">corresponding</font> <font color="#2040a0">singleton</font> <font color="#2040a0">instance</font>
+    <font color="#008000">'Null'</font> <font color="#2040a0">that</font>, <font color="#2040a0">unlike</font> <font color="#2040a0">None</font>, <font color="#2040a0">accepts</font> <font color="#2040a0">any</font> <font color="#2040a0">message</font> <strong>and</strong> <font color="#2040a0">returns</font> <font color="#2040a0">itself</font>.
+
+    <font color="#2040a0">Examples</font><font color="4444FF">:</font>
+    <font color="4444FF">&gt;</font><font color="4444FF">&gt;</font><font color="4444FF">&gt;</font> <font color="#2040a0">Null</font><font color="4444FF">(</font><font color="#008000">&quot;send&quot;</font>, <font color="#008000">&quot;a&quot;</font>, <font color="#008000">&quot;message&quot;</font><font color="4444FF">)</font><font color="4444FF">(</font><font color="#008000">&quot;and one more&quot;</font>,
+    ...      <font color="#008000">&quot;and what you get still&quot;</font><font color="4444FF">)</font> <strong>is</strong> <font color="#2040a0">Null</font>
+    <font color="#2040a0">True</font>
+    <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+
+    def __new__(cls):                    return Null
+    def __call__(self, *args, **kwargs): return Null
+##    def __getstate__(self, *args):       return Null
+    def __getattr__(self, attr):         return Null
+    def __getitem__(self, item):         return Null
+    def __setattr__(self, attr, value):  pass
+    def __setitem__(self, item, value):  pass
+    def __len__(self):                   return 0
+    # FIXME: is this a python bug? otherwise ``for x in Null: pass``
+    #        never terminates...
+    def __iter__(self):                  return iter([])
+    def __contains__(self, item):        return False
+    def __repr__(self):                  return &quot;</font><font color="#2040a0">Null</font><font color="#008000">&quot;
+Null = object.__new__(NullType)
+
+class PageElement:
+    &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Contains</font> <font color="#2040a0">the</font> <font color="#2040a0">navigational</font> <font color="#2040a0">information</font> <strong>for</strong> <font color="#2040a0">some</font> <font color="#2040a0">part</font> <font color="#2040a0">of</font> <font color="#2040a0">the</font> <font color="#2040a0">page</font>
+    <font color="4444FF">(</font><font color="#2040a0">either</font> <font color="#2040a0">a</font> <font color="#2040a0">tag</font> <strong>or</strong> <font color="#2040a0">a</font> <font color="#2040a0">piece</font> <font color="#2040a0">of</font> <font color="#2040a0">text</font><font color="4444FF">)</font><font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+
+    def setup(self, parent=Null, previous=Null):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Sets</font> <font color="#2040a0">up</font> <font color="#2040a0">the</font> <font color="#2040a0">initial</font> <font color="#2040a0">relations</font> <font color="#2040a0">between</font> <font color="#2040a0">this</font> <font color="#2040a0">element</font> <strong>and</strong>
+        <font color="#2040a0">other</font> <font color="#2040a0">elements</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        self.parent = parent
+        self.previous = previous
+        self.next = Null
+        self.previousSibling = Null
+        self.nextSibling = Null
+        if self.parent and self.parent.contents:
+            self.previousSibling = self.parent.contents[-1]
+            self.previousSibling.nextSibling = self
+
+    def findNext(self, name=None, attrs={}, text=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">first</font> <font color="#2040a0">item</font> <font color="#2040a0">that</font> <font color="#2040a0">matches</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font> <font color="#2040a0">criteria</font> <strong>and</strong>
+        <font color="#2040a0">appears</font> <font color="#2040a0">after</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <strong>in</strong> <font color="#2040a0">the</font> <font color="#2040a0">document</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._first(self.fetchNext, name, attrs, text)
+    firstNext = findNext
+
+    def fetchNext(self, name=None, attrs={}, text=None, limit=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">all</font> <font color="#2040a0">items</font> <font color="#2040a0">that</font> <font color="#2040a0">match</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font> <font color="#2040a0">criteria</font> <strong>and</strong> <font color="#2040a0">appear</font>
+        <font color="#2040a0">before</font> <font color="#2040a0">after</font> <font color="#2040a0">Tag</font> <strong>in</strong> <font color="#2040a0">the</font> <font color="#2040a0">document</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._fetch(name, attrs, text, limit, self.nextGenerator)
+
+    def findNextSibling(self, name=None, attrs={}, text=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">closest</font> <font color="#2040a0">sibling</font> <font color="#2040a0">to</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <font color="#2040a0">that</font> <font color="#2040a0">matches</font> <font color="#2040a0">the</font>
+        <font color="#2040a0">given</font> <font color="#2040a0">criteria</font> <strong>and</strong> <font color="#2040a0">appears</font> <font color="#2040a0">after</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <strong>in</strong> <font color="#2040a0">the</font> <font color="#2040a0">document</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._first(self.fetchNextSiblings, name, attrs, text)
+    firstNextSibling = findNextSibling
+
+    def fetchNextSiblings(self, name=None, attrs={}, text=None, limit=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">siblings</font> <font color="#2040a0">of</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <font color="#2040a0">that</font> <font color="#2040a0">match</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font>
+        <font color="#2040a0">criteria</font> <strong>and</strong> <font color="#2040a0">appear</font> <font color="#2040a0">after</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <strong>in</strong> <font color="#2040a0">the</font> <font color="#2040a0">document</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._fetch(name, attrs, text, limit, self.nextSiblingGenerator)
+
+    def findPrevious(self, name=None, attrs={}, text=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">first</font> <font color="#2040a0">item</font> <font color="#2040a0">that</font> <font color="#2040a0">matches</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font> <font color="#2040a0">criteria</font> <strong>and</strong>
+        <font color="#2040a0">appears</font> <font color="#2040a0">before</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <strong>in</strong> <font color="#2040a0">the</font> <font color="#2040a0">document</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._first(self.fetchPrevious, name, attrs, text)
+
+    def fetchPrevious(self, name=None, attrs={}, text=None, limit=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">all</font> <font color="#2040a0">items</font> <font color="#2040a0">that</font> <font color="#2040a0">match</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font> <font color="#2040a0">criteria</font> <strong>and</strong> <font color="#2040a0">appear</font>
+        <font color="#2040a0">before</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <strong>in</strong> <font color="#2040a0">the</font> <font color="#2040a0">document</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._fetch(name, attrs, text, limit, self.previousGenerator)
+    firstPrevious = findPrevious
+
+    def findPreviousSibling(self, name=None, attrs={}, text=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">closest</font> <font color="#2040a0">sibling</font> <font color="#2040a0">to</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <font color="#2040a0">that</font> <font color="#2040a0">matches</font> <font color="#2040a0">the</font>
+        <font color="#2040a0">given</font> <font color="#2040a0">criteria</font> <strong>and</strong> <font color="#2040a0">appears</font> <font color="#2040a0">before</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <strong>in</strong> <font color="#2040a0">the</font> <font color="#2040a0">document</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._first(self.fetchPreviousSiblings, name, attrs, text)
+    firstPreviousSibling = findPreviousSibling
+
+    def fetchPreviousSiblings(self, name=None, attrs={}, text=None,
+                              limit=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">siblings</font> <font color="#2040a0">of</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <font color="#2040a0">that</font> <font color="#2040a0">match</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font>
+        <font color="#2040a0">criteria</font> <strong>and</strong> <font color="#2040a0">appear</font> <font color="#2040a0">before</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <strong>in</strong> <font color="#2040a0">the</font> <font color="#2040a0">document</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._fetch(name, attrs, text, limit,
+                           self.previousSiblingGenerator)
+
+    def findParent(self, name=None, attrs={}):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">closest</font> <font color="#2040a0">parent</font> <font color="#2040a0">of</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <font color="#2040a0">that</font> <font color="#2040a0">matches</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font>
+        <font color="#2040a0">criteria</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        r = Null
+        l = self.fetchParents(name, attrs, 1)
+        if l:
+            r = l[0]
+        return r
+    firstParent = findParent
+
+    def fetchParents(self, name=None, attrs={}, limit=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">parents</font> <font color="#2040a0">of</font> <font color="#2040a0">this</font> <font color="#2040a0">Tag</font> <font color="#2040a0">that</font> <font color="#2040a0">match</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font>
+        <font color="#2040a0">criteria</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._fetch(name, attrs, None, limit, self.parentGenerator)
+
+    #These methods do the real heavy lifting.
+
+    def _first(self, method, name, attrs, text):
+        r = Null
+        l = method(name, attrs, text, 1)
+        if l:
+            r = l[0]
+        return r
+    
+    def _fetch(self, name, attrs, text, limit, generator):
+        &quot;</font><font color="#2040a0">Iterates</font> <font color="#2040a0">over</font> <font color="#2040a0">a</font> <font color="#2040a0">generator</font> <font color="#2040a0">looking</font> <strong>for</strong> <font color="#2040a0">things</font> <font color="#2040a0">that</font> <font color="#2040a0">match</font>.<font color="#008000">&quot;
+        if not hasattr(attrs, 'items'):
+            attrs = {'class' : attrs}
+
+        results = []
+        g = generator()
+        while True:
+            try:
+                i = g.next()
+            except StopIteration:
+                break
+            found = None
+            if isinstance(i, Tag):
+                if not text:
+                    if not name or self._matches(i, name):
+                        match = True
+                        for attr, matchAgainst in attrs.items():
+                            check = i.get(attr)
+                            if not self._matches(check, matchAgainst):
+                                match = False
+                                break
+                        if match:
+                            found = i
+            elif text:
+                if self._matches(i, text):
+                    found = i                    
+            if found:
+                results.append(found)
+                if limit and len(results) &gt;= limit:
+                    break
+        return results
+
+    #Generators that can be used to navigate starting from both
+    #NavigableTexts and Tags.                
+    def nextGenerator(self):
+        i = self
+        while i:
+            i = i.next
+            yield i
+
+    def nextSiblingGenerator(self):
+        i = self
+        while i:
+            i = i.nextSibling
+            yield i
+
+    def previousGenerator(self):
+        i = self
+        while i:
+            i = i.previous
+            yield i
+
+    def previousSiblingGenerator(self):
+        i = self
+        while i:
+            i = i.previousSibling
+            yield i
+
+    def parentGenerator(self):
+        i = self
+        while i:
+            i = i.parent
+            yield i
+
+    def _matches(self, chunk, howToMatch):
+        #print 'looking for %s in %s' % (howToMatch, chunk)
+        #
+        # If given a list of items, return true if the list contains a
+        # text element that matches.
+        if isList(chunk) and not isinstance(chunk, Tag):
+            for tag in chunk:
+                if isinstance(tag, NavigableText) and self._matches(tag, howToMatch):
+                    return True
+            return False
+        if callable(howToMatch):
+            return howToMatch(chunk)
+        if isinstance(chunk, Tag):
+            #Custom match methods take the tag as an argument, but all other
+            #ways of matching match the tag name as a string
+            chunk = chunk.name
+        #Now we know that chunk is a string
+        if not isinstance(chunk, basestring):
+            chunk = str(chunk)
+        if hasattr(howToMatch, 'match'):
+            # It's a regexp object.
+            return howToMatch.search(chunk)
+        if isList(howToMatch):
+            return chunk in howToMatch
+        if hasattr(howToMatch, 'items'):
+            return howToMatch.has_key(chunk)
+        #It's just a string
+        return str(howToMatch) == chunk
+
+class NavigableText(PageElement):
+
+    def __getattr__(self, attr):
+        &quot;</font><font color="#2040a0">For</font> <font color="#2040a0">backwards</font> <font color="#2040a0">compatibility</font>, <font color="#2040a0">text</font>.<font color="#2040a0">string</font> <font color="#2040a0">gives</font> <font color="#2040a0">you</font> <font color="#2040a0">text</font><font color="#008000">&quot;
+        if attr == 'string':
+            return self
+        else:
+            raise AttributeError, &quot;</font><font color="#008000">'%s'</font> <font color="#2040a0">object</font> <font color="#2040a0">has</font> <font color="#2040a0">no</font> <font color="#2040a0">attribute</font> <font color="#008000">'%s'</font><font color="#008000">&quot; % (self.__class__.__name__, attr)
+        
+class NavigableString(str, NavigableText):
+    pass
+
+class NavigableUnicodeString(unicode, NavigableText):
+    pass
+
+class Tag(PageElement):
+
+    &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Represents</font> <font color="#2040a0">a</font> <font color="#2040a0">found</font> <font color="#2040a0">HTML</font> <font color="#2040a0">tag</font> <font color="#2040a0">with</font> <font color="#2040a0">its</font> <font color="#2040a0">attributes</font> <strong>and</strong> <font color="#2040a0">contents</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+
+    def __init__(self, name, attrs=None, parent=Null, previous=Null):
+        &quot;</font><font color="#2040a0">Basic</font> <font color="#2040a0">constructor</font>.<font color="#008000">&quot;
+        self.name = name
+        if attrs == None:
+            attrs = []
+        self.attrs = attrs
+        self.contents = []
+        self.setup(parent, previous)
+        self.hidden = False
+
+    def get(self, key, default=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">the</font> <font color="#2040a0">value</font> <font color="#2040a0">of</font> <font color="#2040a0">the</font> <font color="#008000">'key'</font> <font color="#2040a0">attribute</font> <strong>for</strong> <font color="#2040a0">the</font> <font color="#2040a0">tag</font>, <strong>or</strong>
+        <font color="#2040a0">the</font> <font color="#2040a0">value</font> <font color="#2040a0">given</font> <strong>for</strong> <font color="#008000">'default'</font> <strong>if</strong> <font color="#2040a0">it</font> <font color="#2040a0">doesn</font><font color="#008000">'t have that
+        attribute.&quot;&quot;&quot;
+        return self._getAttrMap().get(key, default)    
+
+    def __getitem__(self, key):
+        &quot;&quot;&quot;tag[key] returns the value of the '</font><font color="#2040a0">key</font><font color="#008000">' attribute for the tag,
+        and throws an exception if it'</font><font color="#2040a0">s</font> <strong>not</strong> <font color="#2040a0">there</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self._getAttrMap()[key]
+
+    def __iter__(self):
+        &quot;</font><font color="#2040a0">Iterating</font> <font color="#2040a0">over</font> <font color="#2040a0">a</font> <font color="#2040a0">tag</font> <font color="#2040a0">iterates</font> <font color="#2040a0">over</font> <font color="#2040a0">its</font> <font color="#2040a0">contents</font>.<font color="#008000">&quot;
+        return iter(self.contents)
+
+    def __len__(self):
+        &quot;</font><font color="#2040a0">The</font> <font color="#2040a0">length</font> <font color="#2040a0">of</font> <font color="#2040a0">a</font> <font color="#2040a0">tag</font> <strong>is</strong> <font color="#2040a0">the</font> <font color="#2040a0">length</font> <font color="#2040a0">of</font> <font color="#2040a0">its</font> <font color="#2040a0">list</font> <font color="#2040a0">of</font> <font color="#2040a0">contents</font>.<font color="#008000">&quot;
+        return len(self.contents)
+
+    def __contains__(self, x):
+        return x in self.contents
+
+    def __nonzero__(self):
+        &quot;</font><font color="#2040a0">A</font> <font color="#2040a0">tag</font> <strong>is</strong> <font color="#2040a0">non</font><font color="4444FF">-</font><font color="#2040a0">None</font> <font color="#2040a0">even</font> <strong>if</strong> <font color="#2040a0">it</font> <font color="#2040a0">has</font> <font color="#2040a0">no</font> <font color="#2040a0">contents</font>.<font color="#008000">&quot;
+        return True
+
+    def __setitem__(self, key, value):        
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Setting</font> <font color="#2040a0">tag</font><font color="4444FF">[</font><font color="#2040a0">key</font><font color="4444FF">]</font> <font color="#2040a0">sets</font> <font color="#2040a0">the</font> <font color="#2040a0">value</font> <font color="#2040a0">of</font> <font color="#2040a0">the</font> <font color="#008000">'key'</font> <font color="#2040a0">attribute</font> <strong>for</strong> <font color="#2040a0">the</font>
+        <font color="#2040a0">tag</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        self._getAttrMap()
+        self.attrMap[key] = value
+        found = False
+        for i in range(0, len(self.attrs)):
+            if self.attrs[i][0] == key:
+                self.attrs[i] = (key, value)
+                found = True
+        if not found:
+            self.attrs.append((key, value))
+        self._getAttrMap()[key] = value
+
+    def __delitem__(self, key):
+        &quot;</font><font color="#2040a0">Deleting</font> <font color="#2040a0">tag</font><font color="4444FF">[</font><font color="#2040a0">key</font><font color="4444FF">]</font> <font color="#2040a0">deletes</font> <font color="#2040a0">all</font> <font color="#008000">'key'</font> <font color="#2040a0">attributes</font> <strong>for</strong> <font color="#2040a0">the</font> <font color="#2040a0">tag</font>.<font color="#008000">&quot;
+        for item in self.attrs:
+            if item[0] == key:
+                self.attrs.remove(item)
+                #We don't break because bad HTML can define the same
+                #attribute multiple times.
+            self._getAttrMap()
+            if self.attrMap.has_key(key):
+                del self.attrMap[key]
+
+    def __call__(self, *args, **kwargs):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Calling</font> <font color="#2040a0">a</font> <font color="#2040a0">tag</font> <font color="#2040a0">like</font> <font color="#2040a0">a</font> <font color="#2040a0">function</font> <strong>is</strong> <font color="#2040a0">the</font> <font color="#2040a0">same</font> <font color="#2040a0">as</font> <font color="#2040a0">calling</font> <font color="#2040a0">its</font>
+        <font color="#2040a0">fetch</font><font color="4444FF">(</font><font color="4444FF">)</font> <font color="#2040a0">method</font>. <font color="#2040a0">Eg</font>. <font color="#2040a0">tag</font><font color="4444FF">(</font><font color="#008000">'a'</font><font color="4444FF">)</font> <font color="#2040a0">returns</font> <font color="#2040a0">a</font> <font color="#2040a0">list</font> <font color="#2040a0">of</font> <font color="#2040a0">all</font> <font color="#2040a0">the</font> <font color="#2040a0">A</font> <font color="#2040a0">tags</font>
+        <font color="#2040a0">found</font> <font color="#2040a0">within</font> <font color="#2040a0">this</font> <font color="#2040a0">tag</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return apply(self.fetch, args, kwargs)
+
+    def __getattr__(self, tag):
+        if len(tag) &gt; 3 and tag.rfind('Tag') == len(tag)-3:
+            return self.first(tag[:-3])
+        elif tag.find('__') != 0:
+            return self.first(tag)
+
+    def __eq__(self, other):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">true</font> <font color="#2040a0">iff</font> <font color="#2040a0">this</font> <font color="#2040a0">tag</font> <font color="#2040a0">has</font> <font color="#2040a0">the</font> <font color="#2040a0">same</font> <font color="#2040a0">name</font>, <font color="#2040a0">the</font> <font color="#2040a0">same</font> <font color="#2040a0">attributes</font>,
+        <strong>and</strong> <font color="#2040a0">the</font> <font color="#2040a0">same</font> <font color="#2040a0">contents</font> <font color="4444FF">(</font><font color="#2040a0">recursively</font><font color="4444FF">)</font> <font color="#2040a0">as</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font> <font color="#2040a0">tag</font>.
+
+        <font color="#2040a0">NOTE</font><font color="4444FF">:</font> <font color="#2040a0">right</font> <font color="#2040a0">now</font> <font color="#2040a0">this</font> <font color="#2040a0">will</font> <strong>return</strong> <font color="#2040a0">false</font> <strong>if</strong> <font color="#2040a0">two</font> <font color="#2040a0">tags</font> <font color="#2040a0">have</font> <font color="#2040a0">the</font>
+        <font color="#2040a0">same</font> <font color="#2040a0">attributes</font> <strong>in</strong> <font color="#2040a0">a</font> <font color="#2040a0">different</font> <font color="#2040a0">order</font>. <font color="#2040a0">Should</font> <font color="#2040a0">this</font> <font color="#2040a0">be</font> <font color="#2040a0">fixed</font>?<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        if not hasattr(other, 'name') or not hasattr(other, 'attrs') or not hasattr(other, 'contents') or self.name != other.name or self.attrs != other.attrs or len(self) != len(other):
+            return False
+        for i in range(0, len(self.contents)):
+            if self.contents[i] != other.contents[i]:
+                return False
+        return True
+
+    def __ne__(self, other):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">true</font> <font color="#2040a0">iff</font> <font color="#2040a0">this</font> <font color="#2040a0">tag</font> <strong>is</strong> <strong>not</strong> <font color="#2040a0">identical</font> <font color="#2040a0">to</font> <font color="#2040a0">the</font> <font color="#2040a0">other</font> <font color="#2040a0">tag</font>,
+        <font color="#2040a0">as</font> <font color="#2040a0">defined</font> <strong>in</strong> <font color="#2040a0">__eq__</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return not self == other
+
+    def __repr__(self):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Renders</font> <font color="#2040a0">this</font> <font color="#2040a0">tag</font> <font color="#2040a0">as</font> <font color="#2040a0">a</font> <font color="#2040a0">string</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return str(self)
+
+    def __unicode__(self):
+        return self.__str__(1)
+
+    def __str__(self, needUnicode=None, showStructureIndent=None):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Returns</font> <font color="#2040a0">a</font> <font color="#2040a0">string</font> <strong>or</strong> <font color="#2040a0">Unicode</font> <font color="#2040a0">representation</font> <font color="#2040a0">of</font> <font color="#2040a0">this</font> <font color="#2040a0">tag</font> <strong>and</strong>
+        <font color="#2040a0">its</font> <font color="#2040a0">contents</font>.
+
+        <font color="#2040a0">NOTE</font><font color="4444FF">:</font> <font color="#2040a0">since</font> <font color="#2040a0">Python</font><font color="#008000">'s HTML parser consumes whitespace, this
+        method is not certain to reproduce the whitespace present in
+        the original string.&quot;&quot;&quot;
+        
+        attrs = []
+        if self.attrs:
+            for key, val in self.attrs:
+                attrs.append('</font><font color="4444FF">%</font><font color="#2040a0">s</font><font color="4444FF">=</font><font color="#008000">&quot;%s&quot;</font><font color="#008000">' % (key, val))
+        close = '</font><font color="#008000">'
+        closeTag = '</font><font color="#008000">'
+        if self.isSelfClosing():
+            close = '</font> /<font color="#008000">'
+        else:
+            closeTag = '</font><font color="4444FF">&lt;</font>/<font color="4444FF">%</font><font color="#2040a0">s</font><font color="4444FF">&gt;</font><font color="#008000">' % self.name
+        indentIncrement = None        
+        if showStructureIndent != None:
+            indentIncrement = showStructureIndent
+            if not self.hidden:
+                indentIncrement += 1
+        contents = self.renderContents(indentIncrement, needUnicode=needUnicode)        
+        if showStructureIndent:
+            space = '</font>\<font color="#2040a0">n</font><font color="4444FF">%</font><font color="#2040a0">s</font><font color="#008000">' % ('</font> <font color="#008000">' * showStructureIndent)
+        if self.hidden:
+            s = contents
+        else:
+            s = []
+            attributeString = '</font><font color="#008000">'
+            if attrs:
+                attributeString = '</font> <font color="#008000">' + '</font> <font color="#008000">'.join(attrs)            
+            if showStructureIndent:
+                s.append(space)
+            s.append('</font><font color="4444FF">&lt;</font><font color="4444FF">%</font><font color="#2040a0">s</font><font color="4444FF">%</font><font color="#2040a0">s</font><font color="4444FF">%</font><font color="#2040a0">s</font><font color="4444FF">&gt;</font><font color="#008000">' % (self.name, attributeString, close))
+            s.append(contents)
+            if closeTag and showStructureIndent != None:
+                s.append(space)
+            s.append(closeTag)
+            s = '</font><font color="#008000">'.join(s)
+        isUnicode = type(s) == types.UnicodeType
+        if needUnicode and not isUnicode:
+            s = unicode(s)
+        elif isUnicode and needUnicode==False:
+            s = str(s)
+        return s
+
+    def prettify(self, needUnicode=None):
+        return self.__str__(needUnicode, showStructureIndent=True)
+
+    def renderContents(self, showStructureIndent=None, needUnicode=None):
+        &quot;&quot;&quot;Renders the contents of this tag as a (possibly Unicode) 
+        string.&quot;&quot;&quot;
+        s=[]
+        for c in self:
+            text = None
+            if isinstance(c, NavigableUnicodeString) or type(c) == types.UnicodeType:
+                text = unicode(c)
+            elif isinstance(c, Tag):
+                s.append(c.__str__(needUnicode, showStructureIndent))
+            elif needUnicode:
+                text = unicode(c)
+            else:
+                text = str(c)
+            if text:
+                if showStructureIndent != None:
+                    if text[-1] == '</font>\<font color="#2040a0">n</font><font color="#008000">':
+                        text = text[:-1]
+                s.append(text)
+        return '</font><font color="#008000">'.join(s)    
+
+    #Soup methods
+
+    def firstText(self, text, recursive=True):
+        &quot;&quot;&quot;Convenience method to retrieve the first piece of text matching the
+        given criteria. '</font><font color="#2040a0">text</font><font color="#008000">' can be a string, a regular expression object,
+        a callable that takes a string and returns whether or not the
+        string '</font><font color="#2040a0">matches</font><font color="#008000">', etc.&quot;&quot;&quot;
+        return self.first(recursive=recursive, text=text)
+
+    def fetchText(self, text, recursive=True, limit=None):
+        &quot;&quot;&quot;Convenience method to retrieve all pieces of text matching the
+        given criteria. '</font><font color="#2040a0">text</font><font color="#008000">' can be a string, a regular expression object,
+        a callable that takes a string and returns whether or not the
+        string '</font><font color="#2040a0">matches</font><font color="#008000">', etc.&quot;&quot;&quot;
+        return self.fetch(recursive=recursive, text=text, limit=limit)
+
+    def first(self, name=None, attrs={}, recursive=True, text=None):
+        &quot;&quot;&quot;Return only the first child of this
+        Tag matching the given criteria.&quot;&quot;&quot;
+        r = Null
+        l = self.fetch(name, attrs, recursive, text, 1)
+        if l:
+            r = l[0]
+        return r
+    findChild = first
+
+    def fetch(self, name=None, attrs={}, recursive=True, text=None,
+              limit=None):
+        &quot;&quot;&quot;Extracts a list of Tag objects that match the given
+        criteria.  You can specify the name of the Tag and any
+        attributes you want the Tag to have.
+
+        The value of a key-value pair in the '</font><font color="#2040a0">attrs</font><font color="#008000">' map can be a
+        string, a list of strings, a regular expression object, or a
+        callable that takes a string and returns whether or not the
+        string matches for some custom definition of '</font><font color="#2040a0">matches</font><font color="#008000">'. The
+        same is true of the tag name.&quot;&quot;&quot;
+        generator = self.recursiveChildGenerator
+        if not recursive:
+            generator = self.childGenerator
+        return self._fetch(name, attrs, text, limit, generator)
+    fetchChildren = fetch
+    
+    #Utility methods
+
+    def isSelfClosing(self):
+        &quot;&quot;&quot;Returns true iff this is a self-closing tag as defined in the HTML
+        standard.
+
+        TODO: This is specific to BeautifulSoup and its subclasses, but it'</font><font color="#2040a0">s</font>
+        <font color="#2040a0">used</font> <font color="#2040a0">by</font> <font color="#2040a0">__str__</font><font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        return self.name in BeautifulSoup.SELF_CLOSING_TAGS
+
+    def append(self, tag):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Appends</font> <font color="#2040a0">the</font> <font color="#2040a0">given</font> <font color="#2040a0">tag</font> <font color="#2040a0">to</font> <font color="#2040a0">the</font> <font color="#2040a0">contents</font> <font color="#2040a0">of</font> <font color="#2040a0">this</font> <font color="#2040a0">tag</font>.<font color="#008000">&quot;&quot;</font><font color="#008000">&quot;
+        self.contents.append(tag)
+
+    #Private methods
+
+    def _getAttrMap(self):
+        &quot;</font><font color="#008000">&quot;&quot;</font><font color="#2040a0">Initializes</font> <font color="#2040a0">a</font> <font color="#2040a0">map</font> <font color="#2040a0">representation</font> <font color="#2040a0">of</font> <font color="#2040a0">this</font> <font color="#2040a0">tag</font><font color="#008000">'s attributes,
+        if not already initialized.&quot;&quot;&quot;
+        if not getattr(self, '</font><font color="#2040a0">attrMap</font><font color="#008000">'):
+            self.attrMap = {}
+            for (key, value) in self.attrs:
+                self.attrMap[key] = value 
+        return self.attrMap
+
+    #Generator methods
+    def childGenerator(self):
+        for i in range(0, len(self.contents)):
+            yield self.contents[i]
+        raise StopIteration
+    
+    def recursiveChildGenerator(self):
+        stack = [(self, 0)]
+        while stack:
+            tag, start = stack.pop()
+            if isinstance(tag, Tag):            
+                for i in range(start, len(tag.contents)):
+                    a = tag.contents[i]
+                    yield a
+                    if isinstance(a, Tag) and tag.contents:
+                        if i &lt; len(tag.contents) - 1:
+                            stack.append((tag, i+1))
+                        stack.append((a, 0))
+                        break
+        raise StopIteration
+
+
+def isList(l):
+    &quot;&quot;&quot;Convenience method that works with all 2.x versions of Python
+    to determine whether or not something is listlike.&quot;&quot;&quot;
+    return hasattr(l, '</font><font color="#2040a0">__iter__</font><font color="#008000">') \
+           or (type(l) in (types.ListType, types.TupleType))
+
+def buildTagMap(default, *args):
+    &quot;&quot;&quot;Turns a list of maps, lists, or scalars into a single map.
+    Used to build the SELF_CLOSING_TAGS and NESTABLE_TAGS maps out
+    of lists and partial maps.&quot;&quot;&quot;
+    built = {}
+    for portion in args:
+        if hasattr(portion, '</font><font color="#2040a0">items</font><font color="#008000">'):
+            #It'</font><font color="#2040a0">s</font> <font color="#2040a0">a</font> <font color="#2040a0">map</font>. <font color="#2040a0">Merge</font> <font color="#2040a0">it</font>.
+            <strong>for</strong> <font color="#2040a0">k</font>,<font color="#2040a0">v</font> <strong>in</strong> <font color="#2040a0">portion</font>.<font color="#2040a0">items</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                <font color="#2040a0">built</font><font color="4444FF">[</font><font color="#2040a0">k</font><font color="4444FF">]</font> <font color="4444FF">=</font> <font color="#2040a0">v</font>
+        <strong>elif</strong> <font color="#2040a0">isList</font><font color="4444FF">(</font><font color="#2040a0">portion</font><font color="4444FF">)</font><font color="4444FF">:</font>
+            <font color="#444444">#It's a list. Map each item to the default.</font>
+            <strong>for</strong> <font color="#2040a0">k</font> <strong>in</strong> <font color="#2040a0">portion</font><font color="4444FF">:</font>
+                <font color="#2040a0">built</font><font color="4444FF">[</font><font color="#2040a0">k</font><font color="4444FF">]</font> <font color="4444FF">=</font> <font color="#2040a0">default</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <font color="#444444">#It's a scalar. Map it to the default.</font>
+            <font color="#2040a0">built</font><font color="4444FF">[</font><font color="#2040a0">portion</font><font color="4444FF">]</font> <font color="4444FF">=</font> <font color="#2040a0">default</font>
+    <strong>return</strong> <font color="#2040a0">built</font>
+
+<strong>class</strong> <font color="#2040a0">BeautifulStoneSoup</font><font color="4444FF">(</font><font color="#2040a0">Tag</font>, <font color="#2040a0">SGMLParser</font><font color="4444FF">)</font><font color="4444FF">:</font>
+
+    <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;This class contains the basic parser and fetch code. It defines
+    a parser that knows nothing about tag behavior except for the
+    following:
+   
+      You can't close a tag without closing all the tags it encloses.
+      That is, &quot;</font><font color="4444FF">&lt;</font><font color="#2040a0">foo</font><font color="4444FF">&gt;</font><font color="4444FF">&lt;</font><font color="#2040a0">bar</font><font color="4444FF">&gt;</font><font color="4444FF">&lt;</font>/<font color="#2040a0">foo</font><font color="4444FF">&gt;</font><font color="#008000">&quot; actually means
+      &quot;</font><font color="4444FF">&lt;</font><font color="#2040a0">foo</font><font color="4444FF">&gt;</font><font color="4444FF">&lt;</font><font color="#2040a0">bar</font><font color="4444FF">&gt;</font><font color="4444FF">&lt;</font>/<font color="#2040a0">bar</font><font color="4444FF">&gt;</font><font color="4444FF">&lt;</font>/<font color="#2040a0">foo</font><font color="4444FF">&gt;</font><font color="#008000">&quot;.
+
+    [Another possible explanation is &quot;</font><font color="4444FF">&lt;</font><font color="#2040a0">foo</font><font color="4444FF">&gt;</font><font color="4444FF">&lt;</font><font color="#2040a0">bar</font> /<font color="4444FF">&gt;</font><font color="4444FF">&lt;</font>/<font color="#2040a0">foo</font><font color="4444FF">&gt;</font><font color="#008000">&quot;, but since
+    this class defines no SELF_CLOSING_TAGS, it will never use that
+    explanation.]
+
+    This class is useful for parsing XML or made-up markup languages,
+    or when BeautifulSoup makes an assumption counter to what you were
+    expecting.&quot;</font><font color="#008000">&quot;&quot;</font>
+
+    <font color="#2040a0">SELF_CLOSING_TAGS</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="4444FF"><strong>}</strong></font>
+    <font color="#2040a0">NESTABLE_TAGS</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="4444FF"><strong>}</strong></font>
+    <font color="#2040a0">RESET_NESTING_TAGS</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="4444FF"><strong>}</strong></font>
+    <font color="#2040a0">QUOTE_TAGS</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="4444FF"><strong>}</strong></font>
+
+    <font color="#444444">#As a public service we will by default silently replace MS smart quotes</font>
+    <font color="#444444">#and similar characters with their HTML or ASCII equivalents.</font>
+    <font color="#2040a0">MS_CHARS</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font> <font color="#008000">'\x80'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;euro;'</font>,
+                 <font color="#008000">'\x81'</font> <font color="4444FF">:</font> <font color="#008000">' '</font>,
+                 <font color="#008000">'\x82'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;sbquo;'</font>,
+                 <font color="#008000">'\x83'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;fnof;'</font>,
+                 <font color="#008000">'\x84'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;bdquo;'</font>,
+                 <font color="#008000">'\x85'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;hellip;'</font>,
+                 <font color="#008000">'\x86'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;dagger;'</font>,
+                 <font color="#008000">'\x87'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;Dagger;'</font>,
+                 <font color="#008000">'\x88'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;caret;'</font>,
+                 <font color="#008000">'\x89'</font> <font color="4444FF">:</font> <font color="#008000">'%'</font>,
+                 <font color="#008000">'\x8A'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;Scaron;'</font>,
+                 <font color="#008000">'\x8B'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;lt;'</font>,
+                 <font color="#008000">'\x8C'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;OElig;'</font>,
+                 <font color="#008000">'\x8D'</font> <font color="4444FF">:</font> <font color="#008000">'?'</font>,
+                 <font color="#008000">'\x8E'</font> <font color="4444FF">:</font> <font color="#008000">'Z'</font>,
+                 <font color="#008000">'\x8F'</font> <font color="4444FF">:</font> <font color="#008000">'?'</font>,
+                 <font color="#008000">'\x90'</font> <font color="4444FF">:</font> <font color="#008000">'?'</font>,
+                 <font color="#008000">'\x91'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;lsquo;'</font>,
+                 <font color="#008000">'\x92'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;rsquo;'</font>,
+                 <font color="#008000">'\x93'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;ldquo;'</font>,
+                 <font color="#008000">'\x94'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;rdquo;'</font>,
+                 <font color="#008000">'\x95'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;bull;'</font>,
+                 <font color="#008000">'\x96'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;ndash;'</font>,
+                 <font color="#008000">'\x97'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;mdash;'</font>,
+                 <font color="#008000">'\x98'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;tilde;'</font>,
+                 <font color="#008000">'\x99'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;trade;'</font>,
+                 <font color="#008000">'\x9a'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;scaron;'</font>,
+                 <font color="#008000">'\x9b'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;gt;'</font>,
+                 <font color="#008000">'\x9c'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;oelig;'</font>,
+                 <font color="#008000">'\x9d'</font> <font color="4444FF">:</font> <font color="#008000">'?'</font>,
+                 <font color="#008000">'\x9e'</font> <font color="4444FF">:</font> <font color="#008000">'z'</font>,
+                 <font color="#008000">'\x9f'</font> <font color="4444FF">:</font> <font color="#008000">'&amp;Yuml;'</font>,<font color="4444FF"><strong>}</strong></font>
+
+    <font color="#2040a0">PARSER_MASSAGE</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="4444FF">(</font><font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#008000">'(&lt;[^&lt;&gt;]*)/&gt;'</font><font color="4444FF">)</font>,
+                       <strong>lambda</strong><font color="4444FF">(</font><font color="#2040a0">x</font><font color="4444FF">)</font><font color="4444FF">:</font><font color="#2040a0">x</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font> <font color="4444FF">+</font> <font color="#008000">' /&gt;'</font><font color="4444FF">)</font>,
+                      <font color="4444FF">(</font><font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#008000">'&lt;!\s+([^&lt;&gt;]*)&gt;'</font><font color="4444FF">)</font>,
+                       <strong>lambda</strong><font color="4444FF">(</font><font color="#2040a0">x</font><font color="4444FF">)</font><font color="4444FF">:</font><font color="#008000">'&lt;!'</font> <font color="4444FF">+</font> <font color="#2040a0">x</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font> <font color="4444FF">+</font> <font color="#008000">'&gt;'</font><font color="4444FF">)</font>,
+                      <font color="4444FF">(</font><font color="#2040a0">re</font>.<font color="#2040a0">compile</font><font color="4444FF">(</font><font color="#008000">&quot;([<font color="#77dd77">\x</font>80-<font color="#77dd77">\x</font>9f])&quot;</font><font color="4444FF">)</font>,
+                       <strong>lambda</strong><font color="4444FF">(</font><font color="#2040a0">x</font><font color="4444FF">)</font><font color="4444FF">:</font> <font color="#2040a0">BeautifulStoneSoup</font>.<font color="#2040a0">MS_CHARS</font>.<font color="#2040a0">get</font><font color="4444FF">(</font><font color="#2040a0">x</font>.<font color="#2040a0">group</font><font color="4444FF">(</font><font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">)</font><font color="4444FF">)</font>
+                      <font color="4444FF">]</font>
+
+    <font color="#2040a0">ROOT_TAG_NAME</font> <font color="4444FF">=</font> <font color="#008000">'[document]'</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> __init__</font>(self,<font color="ff0000"> text</font>=None,<font color="ff0000"> avoidParserProblems</font>=True,
+</strong>                 <font color="#2040a0">initialTextIsEverything</font><font color="4444FF">=</font><font color="#2040a0">True</font><font color="4444FF">)</font><font color="4444FF">:</font>
+        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;Initialize this as the 'root tag' and feed in any text to
+        the parser.
+
+        NOTE about avoidParserProblems: sgmllib will process most bad
+        HTML, and BeautifulSoup has tricks for dealing with some HTML
+        that kills sgmllib, but Beautiful Soup can nonetheless choke
+        or lose data if your data uses self-closing tags or
+        declarations incorrectly. By default, Beautiful Soup sanitizes
+        its input to avoid the vast majority of these problems. The
+        problems are relatively rare, even in bad HTML, so feel free
+        to pass in False to avoidParserProblems if they don't apply to
+        you, and you'll get better performance. The only reason I have
+        this turned on by default is so I don't get so many tech
+        support questions.
+
+        The two most common instances of invalid HTML that will choke
+        sgmllib are fixed by the default parser massage techniques:
+
+         &lt;br/&gt; (No space between name of closing tag and tag close)
+         &lt;! --Comment--&gt; (Extraneous whitespace in declaration)
+
+        You can pass in a custom list of (RE object, replace method)
+        tuples to get Beautiful Soup to scrub your input the way you
+        want.&quot;</font><font color="#008000">&quot;&quot;</font>
+        <font color="#2040a0">Tag</font>.<font color="#2040a0">__init__</font><font color="4444FF">(</font><font color="#2040a0">self</font>, <font color="#2040a0">self</font>.<font color="#2040a0">ROOT_TAG_NAME</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">avoidParserProblems</font> \
+           <strong>and</strong> <strong>not</strong> <font color="#2040a0">isList</font><font color="4444FF">(</font><font color="#2040a0">avoidParserProblems</font><font color="4444FF">)</font><font color="4444FF">:</font>
+            <font color="#2040a0">avoidParserProblems</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">PARSER_MASSAGE</font>            
+        <font color="#2040a0">self</font>.<font color="#2040a0">avoidParserProblems</font> <font color="4444FF">=</font> <font color="#2040a0">avoidParserProblems</font>
+        <font color="#2040a0">SGMLParser</font>.<font color="#2040a0">__init__</font><font color="4444FF">(</font><font color="#2040a0">self</font><font color="4444FF">)</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="4444FF">]</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">hidden</font> <font color="4444FF">=</font> <font color="#FF0000">1</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">reset</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">hasattr</font><font color="4444FF">(</font><font color="#2040a0">text</font>, <font color="#008000">'read'</font><font color="4444FF">)</font><font color="4444FF">:</font>
+            <font color="#444444">#It's a file-type object.</font>
+            <font color="#2040a0">text</font> <font color="4444FF">=</font> <font color="#2040a0">text</font>.<font color="#2040a0">read</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">text</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">feed</font><font color="4444FF">(</font><font color="#2040a0">text</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">initialTextIsEverything</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">done</font><font color="4444FF">(</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> __getattr__</font><font color="2040a0">(self, methodName)</font>:
+</strong>        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;This method routes method call requests to either the SGMLParser
+        superclass or the Tag superclass, depending on the method name.&quot;</font><font color="#008000">&quot;&quot;</font>
+        <strong>if</strong> <font color="#2040a0">methodName</font>.<font color="#2040a0">find</font><font color="4444FF">(</font><font color="#008000">'start_'</font><font color="4444FF">)</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#FF0000">0</font> <strong>or</strong> <font color="#2040a0">methodName</font>.<font color="#2040a0">find</font><font color="4444FF">(</font><font color="#008000">'end_'</font><font color="4444FF">)</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#FF0000">0</font> \
+               <strong>or</strong> <font color="#2040a0">methodName</font>.<font color="#2040a0">find</font><font color="4444FF">(</font><font color="#008000">'do_'</font><font color="4444FF">)</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#FF0000">0</font><font color="4444FF">:</font>
+            <strong>return</strong> <font color="#2040a0">SGMLParser</font>.<font color="#2040a0">__getattr__</font><font color="4444FF">(</font><font color="#2040a0">self</font>, <font color="#2040a0">methodName</font><font color="4444FF">)</font>
+        <strong>elif</strong> <font color="#2040a0">methodName</font>.<font color="#2040a0">find</font><font color="4444FF">(</font><font color="#008000">'__'</font><font color="4444FF">)</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#FF0000">0</font><font color="4444FF">:</font>
+            <strong>return</strong> <font color="#2040a0">Tag</font>.<font color="#2040a0">__getattr__</font><font color="4444FF">(</font><font color="#2040a0">self</font>, <font color="#2040a0">methodName</font><font color="4444FF">)</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <strong>raise</strong> <font color="#2040a0">AttributeError</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> feed</font><font color="2040a0">(self, text)</font>:
+</strong>        <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">avoidParserProblems</font><font color="4444FF">:</font>
+            <strong>for</strong> <font color="#2040a0">fix</font>, <font color="#2040a0">m</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">avoidParserProblems</font><font color="4444FF">:</font>
+                <font color="#2040a0">text</font> <font color="4444FF">=</font> <font color="#2040a0">fix</font>.<font color="#2040a0">sub</font><font color="4444FF">(</font><font color="#2040a0">m</font>, <font color="#2040a0">text</font><font color="4444FF">)</font>
+        <font color="#2040a0">SGMLParser</font>.<font color="#2040a0">feed</font><font color="4444FF">(</font><font color="#2040a0">self</font>, <font color="#2040a0">text</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> done</font><font color="2040a0">(self)</font>:
+</strong>        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;Called when you're done parsing, so that the unclosed tags can be
+        correctly processed.&quot;</font><font color="#008000">&quot;&quot;</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">endData</font><font color="4444FF">(</font><font color="4444FF">)</font> <font color="#444444">#NEW</font>
+        <strong>while</strong> <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>.<font color="#2040a0">name</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">ROOT_TAG_NAME</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">popTag</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> reset</font><font color="2040a0">(self)</font>:
+</strong>        <font color="#2040a0">SGMLParser</font>.<font color="#2040a0">reset</font><font color="4444FF">(</font><font color="#2040a0">self</font><font color="4444FF">)</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">currentData</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="4444FF">]</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font> <font color="4444FF">=</font> <font color="#2040a0">None</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="4444FF">]</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">pushTag</font><font color="4444FF">(</font><font color="#2040a0">self</font><font color="4444FF">)</font>        
+    
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> popTag</font><font color="2040a0">(self)</font>:
+</strong>        <font color="#2040a0">tag</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font>.<font color="#2040a0">pop</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <font color="#444444"># Tags with just one string-owning child get the child as a</font>
+        <font color="#444444"># 'string' property, so that soup.tag.string is shorthand for</font>
+        <font color="#444444"># soup.tag.contents[0]</font>
+        <strong>if</strong> <font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>.<font color="#2040a0">contents</font><font color="4444FF">)</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#FF0000">1</font> <strong>and</strong> \
+           <font color="#2040a0">isinstance</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>.<font color="#2040a0">contents</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font>, <font color="#2040a0">NavigableText</font><font color="4444FF">)</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>.<font color="#2040a0">string</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>.<font color="#2040a0">contents</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font>
+
+        <font color="#444444">#print &quot;Pop&quot;, tag.name</font>
+        <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">[</font><font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">]</font>
+        <strong>return</strong> <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> pushTag</font><font color="2040a0">(self, tag)</font>:
+</strong>        <font color="#444444">#print &quot;Push&quot;, tag.name</font>
+        <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">tag</font><font color="4444FF">)</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">tag</font><font color="4444FF">)</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">[</font><font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">]</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> endData</font><font color="2040a0">(self)</font>:
+</strong>        <font color="#2040a0">currentData</font> <font color="4444FF">=</font> <font color="#008000">''</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">currentData</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">currentData</font><font color="4444FF">:</font>
+            <strong>if</strong> <strong>not</strong> <font color="#2040a0">currentData</font>.<font color="#2040a0">strip</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                <strong>if</strong> <font color="#008000">'\n'</font> <strong>in</strong> <font color="#2040a0">currentData</font><font color="4444FF">:</font>
+                    <font color="#2040a0">currentData</font> <font color="4444FF">=</font> <font color="#008000">'\n'</font>
+                <strong>else</strong><font color="4444FF">:</font>
+                    <font color="#2040a0">currentData</font> <font color="4444FF">=</font> <font color="#008000">' '</font>
+            <font color="#2040a0">c</font> <font color="4444FF">=</font> <font color="#2040a0">NavigableString</font>
+            <strong>if</strong> <font color="#2040a0">type</font><font color="4444FF">(</font><font color="#2040a0">currentData</font><font color="4444FF">)</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">types</font>.<font color="#2040a0">UnicodeType</font><font color="4444FF">:</font>
+                <font color="#2040a0">c</font> <font color="4444FF">=</font> <font color="#2040a0">NavigableUnicodeString</font>
+            <font color="#2040a0">o</font> <font color="4444FF">=</font> <font color="#2040a0">c</font><font color="4444FF">(</font><font color="#2040a0">currentData</font><font color="4444FF">)</font>
+            <font color="#2040a0">o</font>.<font color="#2040a0">setup</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>, <font color="#2040a0">self</font>.<font color="#2040a0">previous</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">previous</font><font color="4444FF">:</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">previous</font>.<font color="#2040a0">next</font> <font color="4444FF">=</font> <font color="#2040a0">o</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">previous</font> <font color="4444FF">=</font> <font color="#2040a0">o</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>.<font color="#2040a0">contents</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">o</font><font color="4444FF">)</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">currentData</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="4444FF">]</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> _popToTag</font><font color="2040a0">(self, name, inclusivePop=True)</font>:
+</strong>        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;Pops the tag stack up to and including the most recent
+        instance of the given tag. If inclusivePop is false, pops the tag
+        stack up to but *not* including the most recent instqance of
+        the given tag.&quot;</font><font color="#008000">&quot;&quot;</font>
+        <strong>if</strong> <font color="#2040a0">name</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">ROOT_TAG_NAME</font><font color="4444FF">:</font>
+            <strong>return</strong>            
+
+        <font color="#2040a0">numPops</font> <font color="4444FF">=</font> <font color="#FF0000">0</font>
+        <font color="#2040a0">mostRecentTag</font> <font color="4444FF">=</font> <font color="#2040a0">None</font>
+        <strong>for</strong> <font color="#2040a0">i</font> <strong>in</strong> <font color="#2040a0">range</font><font color="4444FF">(</font><font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">)</font><font color="4444FF">-</font><font color="#FF0000">1</font>, <font color="#FF0000">0</font>, <font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">:</font>
+            <strong>if</strong> <font color="#2040a0">name</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">[</font><font color="#2040a0">i</font><font color="4444FF">]</font>.<font color="#2040a0">name</font><font color="4444FF">:</font>
+                <font color="#2040a0">numPops</font> <font color="4444FF">=</font> <font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">)</font><font color="4444FF">-</font><font color="#2040a0">i</font>
+                <strong>break</strong>
+        <strong>if</strong> <strong>not</strong> <font color="#2040a0">inclusivePop</font><font color="4444FF">:</font>
+            <font color="#2040a0">numPops</font> <font color="4444FF">=</font> <font color="#2040a0">numPops</font> <font color="4444FF">-</font> <font color="#FF0000">1</font>
+
+        <strong>for</strong> <font color="#2040a0">i</font> <strong>in</strong> <font color="#2040a0">range</font><font color="4444FF">(</font><font color="#FF0000">0</font>, <font color="#2040a0">numPops</font><font color="4444FF">)</font><font color="4444FF">:</font>
+            <font color="#2040a0">mostRecentTag</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">popTag</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <strong>return</strong> <font color="#2040a0">mostRecentTag</font>    
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> _smartPop</font><font color="2040a0">(self, name)</font>:
+</strong>
+        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;We need to pop up to the previous tag of this type, unless
+        one of this tag's nesting reset triggers comes between this
+        tag and the previous tag of this type, OR unless this tag is a
+        generic nesting trigger and another generic nesting trigger
+        comes between this tag and the previous tag of this type.
+
+        Examples:
+         &lt;p&gt;Foo&lt;b&gt;Bar&lt;p&gt; should pop to 'p', not 'b'.
+         &lt;p&gt;Foo&lt;table&gt;Bar&lt;p&gt; should pop to 'table', not 'p'.
+         &lt;p&gt;Foo&lt;table&gt;&lt;tr&gt;Bar&lt;p&gt; should pop to 'tr', not 'p'.
+         &lt;p&gt;Foo&lt;b&gt;Bar&lt;p&gt; should pop to 'p', not 'b'.
+
+         &lt;li&gt;&lt;ul&gt;&lt;li&gt; *&lt;li&gt;* should pop to 'ul', not the first 'li'.
+         &lt;tr&gt;&lt;table&gt;&lt;tr&gt; *&lt;tr&gt;* should pop to 'table', not the first 'tr'
+         &lt;td&gt;&lt;tr&gt;&lt;td&gt; *&lt;td&gt;* should pop to 'tr', not the first 'td'
+        &quot;</font><font color="#008000">&quot;&quot;</font>
+
+        <font color="#2040a0">nestingResetTriggers</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">NESTABLE_TAGS</font>.<font color="#2040a0">get</font><font color="4444FF">(</font><font color="#2040a0">name</font><font color="4444FF">)</font>
+        <font color="#2040a0">isNestable</font> <font color="4444FF">=</font> <font color="#2040a0">nestingResetTriggers</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">None</font>
+        <font color="#2040a0">isResetNesting</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">RESET_NESTING_TAGS</font>.<font color="#2040a0">has_key</font><font color="4444FF">(</font><font color="#2040a0">name</font><font color="4444FF">)</font>
+        <font color="#2040a0">popTo</font> <font color="4444FF">=</font> <font color="#2040a0">None</font>
+        <font color="#2040a0">inclusive</font> <font color="4444FF">=</font> <font color="#2040a0">True</font>
+        <strong>for</strong> <font color="#2040a0">i</font> <strong>in</strong> <font color="#2040a0">range</font><font color="4444FF">(</font><font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">)</font><font color="4444FF">-</font><font color="#FF0000">1</font>, <font color="#FF0000">0</font>, <font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">:</font>
+            <font color="#2040a0">p</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">[</font><font color="#2040a0">i</font><font color="4444FF">]</font>
+            <strong>if</strong> <font color="4444FF">(</font><strong>not</strong> <font color="#2040a0">p</font> <strong>or</strong> <font color="#2040a0">p</font>.<font color="#2040a0">name</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">name</font><font color="4444FF">)</font> <strong>and</strong> <strong>not</strong> <font color="#2040a0">isNestable</font><font color="4444FF">:</font>
+                <font color="#444444">#Non-nestable tags get popped to the top or to their</font>
+                <font color="#444444">#last occurance.</font>
+                <font color="#2040a0">popTo</font> <font color="4444FF">=</font> <font color="#2040a0">name</font>
+                <strong>break</strong>
+            <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">nestingResetTriggers</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">None</font>
+                <strong>and</strong> <font color="#2040a0">p</font>.<font color="#2040a0">name</font> <strong>in</strong> <font color="#2040a0">nestingResetTriggers</font><font color="4444FF">)</font> \
+                <strong>or</strong> <font color="4444FF">(</font><font color="#2040a0">nestingResetTriggers</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">None</font> <strong>and</strong> <font color="#2040a0">isResetNesting</font>
+                    <strong>and</strong> <font color="#2040a0">self</font>.<font color="#2040a0">RESET_NESTING_TAGS</font>.<font color="#2040a0">has_key</font><font color="4444FF">(</font><font color="#2040a0">p</font>.<font color="#2040a0">name</font><font color="4444FF">)</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                
+                <font color="#444444">#If we encounter one of the nesting reset triggers</font>
+                <font color="#444444">#peculiar to this tag, or we encounter another tag</font>
+                <font color="#444444">#that causes nesting to reset, pop up to but not</font>
+                <font color="#444444">#including that tag.</font>
+
+                <font color="#2040a0">popTo</font> <font color="4444FF">=</font> <font color="#2040a0">p</font>.<font color="#2040a0">name</font>
+                <font color="#2040a0">inclusive</font> <font color="4444FF">=</font> <font color="#2040a0">False</font>
+                <strong>break</strong>
+            <font color="#2040a0">p</font> <font color="4444FF">=</font> <font color="#2040a0">p</font>.<font color="#2040a0">parent</font>
+        <strong>if</strong> <font color="#2040a0">popTo</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">_popToTag</font><font color="4444FF">(</font><font color="#2040a0">popTo</font>, <font color="#2040a0">inclusive</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> unknown_starttag</font><font color="2040a0">(self, name, attrs, selfClosing=0)</font>:
+</strong>        <font color="#444444">#print &quot;Start tag %s&quot; % name</font>
+        <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font><font color="4444FF">:</font>
+            <font color="#444444">#This is not a real tag.</font>
+            <font color="#444444">#print &quot;&lt;%s&gt; is not real!&quot; % name</font>
+            <font color="#2040a0">attrs</font> <font color="4444FF">=</font> <font color="#008000">''</font>.<font color="#2040a0">join</font><font color="4444FF">(</font><font color="#2040a0">map</font><font color="4444FF">(</font><strong>lambda</strong><font color="4444FF">(</font><font color="#2040a0">x</font>, <font color="#2040a0">y</font><font color="4444FF">)</font><font color="4444FF">:</font> <font color="#008000">' %s=&quot;%s&quot;'</font> <font color="4444FF">%</font> <font color="4444FF">(</font><font color="#2040a0">x</font>, <font color="#2040a0">y</font><font color="4444FF">)</font>, <font color="#2040a0">attrs</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#008000">'&lt;%s%s&gt;'</font> <font color="4444FF">%</font> <font color="4444FF">(</font><font color="#2040a0">name</font>, <font color="#2040a0">attrs</font><font color="4444FF">)</font><font color="4444FF">)</font>
+            <strong>return</strong>
+        <font color="#2040a0">self</font>.<font color="#2040a0">endData</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <strong>if</strong> <strong>not</strong> <font color="#2040a0">name</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">SELF_CLOSING_TAGS</font> <strong>and</strong> <strong>not</strong> <font color="#2040a0">selfClosing</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">_smartPop</font><font color="4444FF">(</font><font color="#2040a0">name</font><font color="4444FF">)</font>
+        <font color="#2040a0">tag</font> <font color="4444FF">=</font> <font color="#2040a0">Tag</font><font color="4444FF">(</font><font color="#2040a0">name</font>, <font color="#2040a0">attrs</font>, <font color="#2040a0">self</font>.<font color="#2040a0">currentTag</font>, <font color="#2040a0">self</font>.<font color="#2040a0">previous</font><font color="4444FF">)</font>        
+        <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">previous</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">previous</font>.<font color="#2040a0">next</font> <font color="4444FF">=</font> <font color="#2040a0">tag</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">previous</font> <font color="4444FF">=</font> <font color="#2040a0">tag</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">pushTag</font><font color="4444FF">(</font><font color="#2040a0">tag</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">selfClosing</font> <strong>or</strong> <font color="#2040a0">name</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">SELF_CLOSING_TAGS</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">popTag</font><font color="4444FF">(</font><font color="4444FF">)</font>                
+        <strong>if</strong> <font color="#2040a0">name</font> <strong>in</strong> <font color="#2040a0">self</font>.<font color="#2040a0">QUOTE_TAGS</font><font color="4444FF">:</font>
+            <font color="#444444">#print &quot;Beginning quote (%s)&quot; % name</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">name</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">literal</font> <font color="4444FF">=</font> <font color="#FF0000">1</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> unknown_endtag</font><font color="2040a0">(self, name)</font>:
+</strong>        <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font> <strong>and</strong> <font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font><font color="4444FF">[</font><font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">]</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">name</font><font color="4444FF">:</font>
+            <font color="#444444">#This is not a real end tag.</font>
+            <font color="#444444">#print &quot;&lt;/%s&gt; is not real!&quot; % name</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#008000">'&lt;/%s&gt;'</font> <font color="4444FF">%</font> <font color="#2040a0">name</font><font color="4444FF">)</font>
+            <strong>return</strong>
+        <font color="#2040a0">self</font>.<font color="#2040a0">endData</font><font color="4444FF">(</font><font color="4444FF">)</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">_popToTag</font><font color="4444FF">(</font><font color="#2040a0">name</font><font color="4444FF">)</font>
+        <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font> <strong>and</strong> <font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font><font color="4444FF">[</font><font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">]</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">name</font><font color="4444FF">:</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font>.<font color="#2040a0">pop</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <font color="#2040a0">self</font>.<font color="#2040a0">literal</font> <font color="4444FF">=</font> <font color="4444FF">(</font><font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">quoteStack</font><font color="4444FF">)</font> <font color="4444FF">&gt;</font> <font color="#FF0000">0</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> handle_data</font><font color="2040a0">(self, data)</font>:
+</strong>        <font color="#2040a0">self</font>.<font color="#2040a0">currentData</font>.<font color="#2040a0">append</font><font color="4444FF">(</font><font color="#2040a0">data</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> handle_pi</font><font color="2040a0">(self, text)</font>:
+</strong>        <font color="#008000">&quot;Propagate processing instructions right through.&quot;</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#008000">&quot;&lt;?%s&gt;&quot;</font> <font color="4444FF">%</font> <font color="#2040a0">text</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> handle_comment</font><font color="2040a0">(self, text)</font>:
+</strong>        <font color="#008000">&quot;Propagate comments right through.&quot;</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#008000">&quot;&lt;!--%s--&gt;&quot;</font> <font color="4444FF">%</font> <font color="#2040a0">text</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> handle_charref</font><font color="2040a0">(self, ref)</font>:
+</strong>        <font color="#008000">&quot;Propagate char refs right through.&quot;</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#008000">'&amp;#%s;'</font> <font color="4444FF">%</font> <font color="#2040a0">ref</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> handle_entityref</font><font color="2040a0">(self, ref)</font>:
+</strong>        <font color="#008000">&quot;Propagate entity refs right through.&quot;</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#008000">'&amp;%s;'</font> <font color="4444FF">%</font> <font color="#2040a0">ref</font><font color="4444FF">)</font>
+        
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> handle_decl</font><font color="2040a0">(self, data)</font>:
+</strong>        <font color="#008000">&quot;Propagate DOCTYPEs and the like right through.&quot;</font>
+        <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#008000">'&lt;!%s&gt;'</font> <font color="4444FF">%</font> <font color="#2040a0">data</font><font color="4444FF">)</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> parse_declaration</font><font color="2040a0">(self, i)</font>:
+</strong>        <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;Treat a bogus SGML declaration as raw data. Treat a CDATA
+        declaration as regular data.&quot;</font><font color="#008000">&quot;&quot;</font>
+        <font color="#2040a0">j</font> <font color="4444FF">=</font> <font color="#2040a0">None</font>
+        <strong>if</strong> <font color="#2040a0">self</font>.<font color="#2040a0">rawdata</font><font color="4444FF">[</font><font color="#2040a0">i</font><font color="4444FF">:</font><font color="#2040a0">i</font><font color="4444FF">+</font><font color="#FF0000">9</font><font color="4444FF">]</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#008000">'&lt;![CDATA['</font><font color="4444FF">:</font>
+             <font color="#2040a0">k</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">rawdata</font>.<font color="#2040a0">find</font><font color="4444FF">(</font><font color="#008000">']]&gt;'</font>, <font color="#2040a0">i</font><font color="4444FF">)</font>
+             <strong>if</strong> <font color="#2040a0">k</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">:</font>
+                 <font color="#2040a0">k</font> <font color="4444FF">=</font> <font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">rawdata</font><font color="4444FF">)</font>
+             <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">rawdata</font><font color="4444FF">[</font><font color="#2040a0">i</font><font color="4444FF">+</font><font color="#FF0000">9</font><font color="4444FF">:</font><font color="#2040a0">k</font><font color="4444FF">]</font><font color="4444FF">)</font>
+             <font color="#2040a0">j</font> <font color="4444FF">=</font> <font color="#2040a0">k</font><font color="4444FF">+</font><font color="#FF0000">3</font>
+        <strong>else</strong><font color="4444FF">:</font>
+            <strong>try</strong><font color="4444FF">:</font>
+                <font color="#2040a0">j</font> <font color="4444FF">=</font> <font color="#2040a0">SGMLParser</font>.<font color="#2040a0">parse_declaration</font><font color="4444FF">(</font><font color="#2040a0">self</font>, <font color="#2040a0">i</font><font color="4444FF">)</font>
+            <strong>except</strong> <font color="#2040a0">SGMLParseError</font><font color="4444FF">:</font>
+                <font color="#2040a0">toHandle</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">rawdata</font><font color="4444FF">[</font><font color="#2040a0">i</font><font color="4444FF">:</font><font color="4444FF">]</font>
+                <font color="#2040a0">self</font>.<font color="#2040a0">handle_data</font><font color="4444FF">(</font><font color="#2040a0">toHandle</font><font color="4444FF">)</font>
+                <font color="#2040a0">j</font> <font color="4444FF">=</font> <font color="#2040a0">i</font> <font color="4444FF">+</font> <font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">toHandle</font><font color="4444FF">)</font>
+        <strong>return</strong> <font color="#2040a0">j</font>
+
+<strong>class</strong> <font color="#2040a0">BeautifulSoup</font><font color="4444FF">(</font><font color="#2040a0">BeautifulStoneSoup</font><font color="4444FF">)</font><font color="4444FF">:</font>
+
+    <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;This parser knows the following facts about HTML:
+
+    * Some tags have no closing tag and should be interpreted as being
+      closed as soon as they are encountered.
+
+    * The text inside some tags (ie. 'script') may contain tags which
+      are not really part of the document and which should be parsed
+      as text, not tags. If you want to parse the text as tags, you can
+      always fetch it and parse it explicitly.
+
+    * Tag nesting rules:
+
+      Most tags can't be nested at all. For instance, the occurance of
+      a &lt;p&gt; tag should implicitly close the previous &lt;p&gt; tag.
+
+       &lt;p&gt;Para1&lt;p&gt;Para2
+        should be transformed into:
+       &lt;p&gt;Para1&lt;/p&gt;&lt;p&gt;Para2
+
+      Some tags can be nested arbitrarily. For instance, the occurance
+      of a &lt;blockquote&gt; tag should _not_ implicitly close the previous
+      &lt;blockquote&gt; tag.
+
+       Alice said: &lt;blockquote&gt;Bob said: &lt;blockquote&gt;Blah
+        should NOT be transformed into:
+       Alice said: &lt;blockquote&gt;Bob said: &lt;/blockquote&gt;&lt;blockquote&gt;Blah
+
+      Some tags can be nested, but the nesting is reset by the
+      interposition of other tags. For instance, a &lt;tr&gt; tag should
+      implicitly close the previous &lt;tr&gt; tag within the same &lt;table&gt;,
+      but not close a &lt;tr&gt; tag in another table.
+
+       &lt;table&gt;&lt;tr&gt;Blah&lt;tr&gt;Blah
+        should be transformed into:
+       &lt;table&gt;&lt;tr&gt;Blah&lt;/tr&gt;&lt;tr&gt;Blah
+        but,
+       &lt;tr&gt;Blah&lt;table&gt;&lt;tr&gt;Blah
+        should NOT be transformed into
+       &lt;tr&gt;Blah&lt;table&gt;&lt;/tr&gt;&lt;tr&gt;Blah
+
+    Differing assumptions about tag nesting rules are a major source
+    of problems with the BeautifulSoup class. If BeautifulSoup is not
+    treating as nestable a tag your page author treats as nestable,
+    try ICantBelieveItsBeautifulSoup before writing your own
+    subclass.&quot;</font><font color="#008000">&quot;&quot;</font>
+
+    <font color="#2040a0">SELF_CLOSING_TAGS</font> <font color="4444FF">=</font> <font color="#2040a0">buildTagMap</font><font color="4444FF">(</font><font color="#2040a0">None</font>, <font color="4444FF">[</font><font color="#008000">'br'</font> , <font color="#008000">'hr'</font>, <font color="#008000">'input'</font>, <font color="#008000">'img'</font>, <font color="#008000">'meta'</font>,
+                                           <font color="#008000">'spacer'</font>, <font color="#008000">'link'</font>, <font color="#008000">'frame'</font>, <font color="#008000">'base'</font><font color="4444FF">]</font><font color="4444FF">)</font>
+
+    <font color="#2040a0">QUOTE_TAGS</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="#008000">'script'</font><font color="4444FF">:</font> <font color="#2040a0">None</font><font color="4444FF"><strong>}</strong></font>
+    
+    <font color="#444444">#According to the HTML standard, each of these inline tags can</font>
+    <font color="#444444">#contain another tag of the same type. Furthermore, it's common</font>
+    <font color="#444444">#to actually use these tags this way.</font>
+    <font color="#2040a0">NESTABLE_INLINE_TAGS</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#008000">'span'</font>, <font color="#008000">'font'</font>, <font color="#008000">'q'</font>, <font color="#008000">'object'</font>, <font color="#008000">'bdo'</font>, <font color="#008000">'sub'</font>, <font color="#008000">'sup'</font>,
+                            <font color="#008000">'center'</font><font color="4444FF">]</font>
+
+    <font color="#444444">#According to the HTML standard, these block tags can contain</font>
+    <font color="#444444">#another tag of the same type. Furthermore, it's common</font>
+    <font color="#444444">#to actually use these tags this way.</font>
+    <font color="#2040a0">NESTABLE_BLOCK_TAGS</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#008000">'blockquote'</font>, <font color="#008000">'div'</font>, <font color="#008000">'fieldset'</font>, <font color="#008000">'ins'</font>, <font color="#008000">'del'</font><font color="4444FF">]</font>
+
+    <font color="#444444">#Lists can contain other lists, but there are restrictions.    </font>
+    <font color="#2040a0">NESTABLE_LIST_TAGS</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font> <font color="#008000">'ol'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="4444FF">]</font>,
+                           <font color="#008000">'ul'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="4444FF">]</font>,
+                           <font color="#008000">'li'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="#008000">'ul'</font>, <font color="#008000">'ol'</font><font color="4444FF">]</font>,
+                           <font color="#008000">'dl'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="4444FF">]</font>,
+                           <font color="#008000">'dd'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="#008000">'dl'</font><font color="4444FF">]</font>,
+                           <font color="#008000">'dt'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="#008000">'dl'</font><font color="4444FF">]</font> <font color="4444FF"><strong>}</strong></font>
+
+    <font color="#444444">#Tables can contain other tables, but there are restrictions.    </font>
+    <font color="#2040a0">NESTABLE_TABLE_TAGS</font> <font color="4444FF">=</font> <font color="4444FF"><strong>{</strong></font><font color="#008000">'table'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="4444FF">]</font>, 
+                           <font color="#008000">'tr'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="#008000">'table'</font>, <font color="#008000">'tbody'</font>, <font color="#008000">'tfoot'</font>, <font color="#008000">'thead'</font><font color="4444FF">]</font>,
+                           <font color="#008000">'td'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="#008000">'tr'</font><font color="4444FF">]</font>,
+                           <font color="#008000">'th'</font> <font color="4444FF">:</font> <font color="4444FF">[</font><font color="#008000">'tr'</font><font color="4444FF">]</font>,
+                           <font color="4444FF"><strong>}</strong></font>
+
+    <font color="#2040a0">NON_NESTABLE_BLOCK_TAGS</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#008000">'address'</font>, <font color="#008000">'form'</font>, <font color="#008000">'p'</font>, <font color="#008000">'pre'</font><font color="4444FF">]</font>
+
+    <font color="#444444">#If one of these tags is encountered, all tags up to the next tag of</font>
+    <font color="#444444">#this type are popped.</font>
+    <font color="#2040a0">RESET_NESTING_TAGS</font> <font color="4444FF">=</font> <font color="#2040a0">buildTagMap</font><font color="4444FF">(</font><font color="#2040a0">None</font>, <font color="#2040a0">NESTABLE_BLOCK_TAGS</font>, <font color="#008000">'noscript'</font>,
+                                     <font color="#2040a0">NON_NESTABLE_BLOCK_TAGS</font>,
+                                     <font color="#2040a0">NESTABLE_LIST_TAGS</font>,
+                                     <font color="#2040a0">NESTABLE_TABLE_TAGS</font><font color="4444FF">)</font>
+
+    <font color="#2040a0">NESTABLE_TAGS</font> <font color="4444FF">=</font> <font color="#2040a0">buildTagMap</font><font color="4444FF">(</font><font color="4444FF">[</font><font color="4444FF">]</font>, <font color="#2040a0">NESTABLE_INLINE_TAGS</font>, <font color="#2040a0">NESTABLE_BLOCK_TAGS</font>,
+                                <font color="#2040a0">NESTABLE_LIST_TAGS</font>, <font color="#2040a0">NESTABLE_TABLE_TAGS</font><font color="4444FF">)</font>
+    
+<strong>class</strong> <font color="#2040a0">ICantBelieveItsBeautifulSoup</font><font color="4444FF">(</font><font color="#2040a0">BeautifulSoup</font><font color="4444FF">)</font><font color="4444FF">:</font>
+
+    <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;The BeautifulSoup class is oriented towards skipping over
+    common HTML errors like unclosed tags. However, sometimes it makes
+    errors of its own. For instance, consider this fragment:
+
+     &lt;b&gt;Foo&lt;b&gt;Bar&lt;/b&gt;&lt;/b&gt;
+
+    This is perfectly valid (if bizarre) HTML. However, the
+    BeautifulSoup class will implicitly close the first b tag when it
+    encounters the second 'b'. It will think the author wrote
+    &quot;</font><font color="4444FF">&lt;</font><font color="#2040a0">b</font><font color="4444FF">&gt;</font><font color="#2040a0">Foo</font><font color="4444FF">&lt;</font><font color="#2040a0">b</font><font color="4444FF">&gt;</font><font color="#2040a0">Bar</font><font color="#008000">&quot;, and didn't close the first 'b' tag, because
+    there's no real-world reason to bold something that's already
+    bold. When it encounters '&lt;/b&gt;&lt;/b&gt;' it will close two more 'b'
+    tags, for a grand total of three tags closed instead of two. This
+    can throw off the rest of your document structure. The same is
+    true of a number of other tags, listed below.
+
+    It's much more common for someone to forget to close (eg.) a 'b'
+    tag than to actually use nested 'b' tags, and the BeautifulSoup
+    class handles the common case. This class handles the
+    not-co-common case: where you can't believe someone wrote what
+    they did, but it's valid HTML and BeautifulSoup screwed up by
+    assuming it wouldn't be.
+
+    If this doesn't do what you need, try subclassing this class or
+    BeautifulSoup, and providing your own list of NESTABLE_TAGS.&quot;</font><font color="#008000">&quot;&quot;</font>
+
+    <font color="#2040a0">I_CANT_BELIEVE_THEYRE_NESTABLE_INLINE_TAGS</font> <font color="4444FF">=</font> \
+     <font color="4444FF">[</font><font color="#008000">'em'</font>, <font color="#008000">'big'</font>, <font color="#008000">'i'</font>, <font color="#008000">'small'</font>, <font color="#008000">'tt'</font>, <font color="#008000">'abbr'</font>, <font color="#008000">'acronym'</font>, <font color="#008000">'strong'</font>,
+      <font color="#008000">'cite'</font>, <font color="#008000">'code'</font>, <font color="#008000">'dfn'</font>, <font color="#008000">'kbd'</font>, <font color="#008000">'samp'</font>, <font color="#008000">'strong'</font>, <font color="#008000">'var'</font>, <font color="#008000">'b'</font>,
+      <font color="#008000">'big'</font><font color="4444FF">]</font>
+
+    <font color="#2040a0">I_CANT_BELIEVE_THEYRE_NESTABLE_BLOCK_TAGS</font> <font color="4444FF">=</font> <font color="4444FF">[</font><font color="#008000">'noscript'</font><font color="4444FF">]</font>
+
+    <font color="#2040a0">NESTABLE_TAGS</font> <font color="4444FF">=</font> <font color="#2040a0">buildTagMap</font><font color="4444FF">(</font><font color="4444FF">[</font><font color="4444FF">]</font>, <font color="#2040a0">BeautifulSoup</font>.<font color="#2040a0">NESTABLE_TAGS</font>,
+                                <font color="#2040a0">I_CANT_BELIEVE_THEYRE_NESTABLE_BLOCK_TAGS</font>,
+                                <font color="#2040a0">I_CANT_BELIEVE_THEYRE_NESTABLE_INLINE_TAGS</font><font color="4444FF">)</font>
+
+<strong>class</strong> <font color="#2040a0">BeautifulSOAP</font><font color="4444FF">(</font><font color="#2040a0">BeautifulStoneSoup</font><font color="4444FF">)</font><font color="4444FF">:</font>
+    <font color="#008000">&quot;&quot;</font><font color="#008000">&quot;This class will push a tag with only a single string child into
+    the tag's parent as an attribute. The attribute's name is the tag
+    name, and the value is the string child. An example should give
+    the flavor of the change:
+
+    &lt;foo&gt;&lt;bar&gt;baz&lt;/bar&gt;&lt;/foo&gt;
+     =&gt;
+    &lt;foo bar=&quot;</font><font color="#2040a0">baz</font><font color="#008000">&quot;&gt;&lt;bar&gt;baz&lt;/bar&gt;&lt;/foo&gt;
+
+    You can then access fooTag['bar'] instead of fooTag.barTag.string.
+
+    This is, of course, useful for scraping structures that tend to
+    use subelements instead of attributes, such as SOAP messages. Note
+    that it modifies its input, so don't print the modified version
+    out.
+
+    I'm not sure how many people really want to use this class; let me
+    know if you do. Mainly I like the name.&quot;</font><font color="#008000">&quot;&quot;</font>
+
+<strong>   <font color="ff0000"> def</font><font color="ff0000"> popTag</font><font color="2040a0">(self)</font>:
+</strong>        <strong>if</strong> <font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">)</font> <font color="4444FF">&gt;</font> <font color="#FF0000">1</font><font color="4444FF">:</font>
+            <font color="#2040a0">tag</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">[</font><font color="4444FF">-</font><font color="#FF0000">1</font><font color="4444FF">]</font>
+            <font color="#2040a0">parent</font> <font color="4444FF">=</font> <font color="#2040a0">self</font>.<font color="#2040a0">tagStack</font><font color="4444FF">[</font><font color="4444FF">-</font><font color="#FF0000">2</font><font color="4444FF">]</font>
+            <font color="#2040a0">parent</font>.<font color="#2040a0">_getAttrMap</font><font color="4444FF">(</font><font color="4444FF">)</font>
+            <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">isinstance</font><font color="4444FF">(</font><font color="#2040a0">tag</font>, <font color="#2040a0">Tag</font><font color="4444FF">)</font> <strong>and</strong> <font color="#2040a0">len</font><font color="4444FF">(</font><font color="#2040a0">tag</font>.<font color="#2040a0">contents</font><font color="4444FF">)</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#FF0000">1</font> <strong>and</strong>
+                <font color="#2040a0">isinstance</font><font color="4444FF">(</font><font color="#2040a0">tag</font>.<font color="#2040a0">contents</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font>, <font color="#2040a0">NavigableText</font><font color="4444FF">)</font> <strong>and</strong> 
+                <strong>not</strong> <font color="#2040a0">parent</font>.<font color="#2040a0">attrMap</font>.<font color="#2040a0">has_key</font><font color="4444FF">(</font><font color="#2040a0">tag</font>.<font color="#2040a0">name</font><font color="4444FF">)</font><font color="4444FF">)</font><font color="4444FF">:</font>
+                <font color="#2040a0">parent</font><font color="4444FF">[</font><font color="#2040a0">tag</font>.<font color="#2040a0">name</font><font color="4444FF">]</font> <font color="4444FF">=</font> <font color="#2040a0">tag</font>.<font color="#2040a0">contents</font><font color="4444FF">[</font><font color="#FF0000">0</font><font color="4444FF">]</font>
+        <font color="#2040a0">BeautifulStoneSoup</font>.<font color="#2040a0">popTag</font><font color="4444FF">(</font><font color="#2040a0">self</font><font color="4444FF">)</font>
+
+<font color="#444444">#Enterprise class names! It has come to our attention that some people</font>
+<font color="#444444">#think the names of the Beautiful Soup parser classes are too silly</font>
+<font color="#444444">#and &quot;unprofessional&quot; for use in enterprise screen-scraping. We feel</font>
+<font color="#444444">#your pain! For such-minded folk, the Beautiful Soup Consortium And</font>
+<font color="#444444">#All-Night Kosher Bakery recommends renaming this file to</font>
+<font color="#444444">#&quot;RobustParser.py&quot; (or, in cases of extreme enterprisitude,</font>
+<font color="#444444">#&quot;RobustParserBeanInterface.class&quot;) and using the following</font>
+<font color="#444444">#enterprise-friendly class aliases:</font>
+<strong>class</strong> <font color="#2040a0">RobustXMLParser</font><font color="4444FF">(</font><font color="#2040a0">BeautifulStoneSoup</font><font color="4444FF">)</font><font color="4444FF">:</font>
+    <strong>pass</strong>
+<strong>class</strong> <font color="#2040a0">RobustHTMLParser</font><font color="4444FF">(</font><font color="#2040a0">BeautifulSoup</font><font color="4444FF">)</font><font color="4444FF">:</font>
+    <strong>pass</strong>
+<strong>class</strong> <font color="#2040a0">RobustWackAssHTMLParser</font><font color="4444FF">(</font><font color="#2040a0">ICantBelieveItsBeautifulSoup</font><font color="4444FF">)</font><font color="4444FF">:</font>
+    <strong>pass</strong>
+<strong>class</strong> <font color="#2040a0">SimplifyingSOAPParser</font><font color="4444FF">(</font><font color="#2040a0">BeautifulSOAP</font><font color="4444FF">)</font><font color="4444FF">:</font>
+    <strong>pass</strong>
+
+<font color="#444444">###</font>
+
+
+<font color="#444444">#By default, act as an HTML pretty-printer.</font>
+<strong>if</strong> <font color="#2040a0">__name__</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#008000">'__main__'</font><font color="4444FF">:</font>
+    <strong>import</strong> <font color="#2040a0">sys</font>
+    <font color="#2040a0">soup</font> <font color="4444FF">=</font> <font color="#2040a0">BeautifulStoneSoup</font><font color="4444FF">(</font><font color="#2040a0">sys</font>.<font color="#2040a0">stdin</font>.<font color="#2040a0">read</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">)</font>
+    <strong>print</strong> <font color="#2040a0">soup</font>.<font color="#2040a0">prettify</font><font color="4444FF">(</font><font color="4444FF">)</font>
+
+</pre>
+<hr>
+syntax highlighted by <a href="http://www.palfrader.org/code2html">Code2HTML</a>, v. 0.9.1
+</body>
+</html>

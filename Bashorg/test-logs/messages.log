@@ -1,0 +1,322 @@
+ERROR Invalid user dictionary file, resetting to empty.
+ERROR Exact error: IOError: [Errno 2] No such file or directory: 'test-conf/users.conf'
+ERROR Invalid channel database, resetting to empty.
+ERROR Exact error: IOError: [Errno 2] No such file or directory: 'test-conf/channels.conf'
+WARNING Couldn't open ignore database: [Errno 2] No such file or directory: 'test-conf/ignores.conf'
+INFO Shutdown initiated.
+INFO Killing Driver objects.
+INFO Killing Irc objects.
+INFO Shutdown complete.
+ERROR Invalid user dictionary file, resetting to empty.
+ERROR Exact error: IOError: [Errno 2] No such file or directory: 'test-conf/users.conf'
+ERROR Invalid channel database, resetting to empty.
+ERROR Exact error: IOError: [Errno 2] No such file or directory: 'test-conf/channels.conf'
+WARNING Couldn't open ignore database: [Errno 2] No such file or directory: 'test-conf/ignores.conf'
+INFO Shutdown initiated.
+INFO Killing Driver objects.
+INFO Killing Irc objects.
+INFO Shutdown complete.
+ERROR Invalid user dictionary file, resetting to empty.
+ERROR Exact error: IOError: [Errno 2] No such file or directory: 'test-conf/users.conf'
+ERROR Invalid channel database, resetting to empty.
+ERROR Exact error: IOError: [Errno 2] No such file or directory: 'test-conf/channels.conf'
+WARNING Couldn't open ignore database: [Errno 2] No such file or directory: 'test-conf/ignores.conf'
+INFO Shutdown initiated.
+INFO Killing Driver objects.
+INFO Killing Irc objects.
+INFO Shutdown complete.
+ERROR Invalid user dictionary file, resetting to empty.
+ERROR Exact error: IOError: [Errno 2] No such file or directory: 'test-conf/users.conf'
+ERROR Invalid channel database, resetting to empty.
+ERROR Exact error: IOError: [Errno 2] No such file or directory: 'test-conf/channels.conf'
+WARNING Couldn't open ignore database: [Errno 2] No such file or directory: 'test-conf/ignores.conf'
+DEBUG getopts: {'regexp': <context for regexpMatcher>, 'by': <context for otherUser>}
+DEBUG getoptL: ['regexp=', 'by=']
+CRITICAL Beginning test case Bash.test.BashTestCase.testDocumentation
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+CRITICAL Beginning test case Bash.test.BashTestCase.test_rl
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG Incoming message: :test!user@host.domain.tld PRIVMSG test :rl
+DEBUG findCallbacksForArgs: [(<Bash Bash <Bash.plugin.Bash object at 0xb69ce10c>>, ['rl'])]
+DEBUG Spawning thread Thread #1 (for Bash.['rl']) (args: (['rl'], <supybot.callbacks.NestedCommandsIrcProxy object at 0x992120c>, IrcMsg(prefix="test!user@host.domain.tld", command="PRIVMSG", args=('test', 'rl')), []))
+DEBUG Spawning thread "Thread #1 (for Bash.['rl'])".
+INFO rl called by "test!user@host.domain.tld".
+DEBUG State before call: State(args=[], kwargs={}, channel=None)
+ERROR Spec: []
+ERROR Received args: []
+ERROR Extra args: []
+ERROR Uncaught exception in ['rl'].
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/site-packages/supybot/callbacks.py", line 1180, in _callCommand
+    self.callCommand(command, irc, msg, *args, **kwargs)
+  File "/usr/lib/python2.6/site-packages/supybot/utils/python.py", line 86, in g
+    f(self, *args, **kwargs)
+  File "/usr/lib/python2.6/site-packages/supybot/callbacks.py", line 1166, in callCommand
+    method(irc, msg, *args, **kwargs)
+  File "/usr/lib/python2.6/site-packages/supybot/commands.py", line 913, in newf
+    f(self, irc, msg, args, *state.args, **state.kwargs)
+  File "/usr/lib/python2.6/site-packages/supybot/plugins/Bash/plugin.py", line 66, in rl
+    irc.reply(self._get_random_quote_for_url(self.latest_url))
+TypeError: _get_random_quote_for_url() takes exactly 1 argument (2 given)
+ERROR Exception id: 0xdc5f6
+DEBUG Outgoing message: PRIVMSG test :Error: TypeError: _get_random_quote_for_url() takes exactly 1 argument (2 given)
+CRITICAL Beginning test case Bash.test.BashTestCase.test_rr
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG Incoming message: :test!user@host.domain.tld PRIVMSG test :rr
+DEBUG findCallbacksForArgs: [(<Bash Bash <Bash.plugin.Bash object at 0x998a08c>>, ['rr'])]
+DEBUG Spawning thread Thread #2 (for Bash.['rr']) (args: (['rr'], <supybot.callbacks.NestedCommandsIrcProxy object at 0xb69c214c>, IrcMsg(prefix="test!user@host.domain.tld", command="PRIVMSG", args=('test', 'rr')), []))
+DEBUG Spawning thread "Thread #2 (for Bash.['rr'])".
+INFO rr called by "test!user@host.domain.tld".
+DEBUG State before call: State(args=[], kwargs={}, channel=None)
+ERROR Spec: []
+ERROR Received args: []
+ERROR Extra args: []
+ERROR Uncaught exception in ['rr'].
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/site-packages/supybot/callbacks.py", line 1180, in _callCommand
+    self.callCommand(command, irc, msg, *args, **kwargs)
+  File "/usr/lib/python2.6/site-packages/supybot/utils/python.py", line 86, in g
+    f(self, *args, **kwargs)
+  File "/usr/lib/python2.6/site-packages/supybot/callbacks.py", line 1166, in callCommand
+    method(irc, msg, *args, **kwargs)
+  File "/usr/lib/python2.6/site-packages/supybot/commands.py", line 913, in newf
+    f(self, irc, msg, args, *state.args, **state.kwargs)
+  File "/usr/lib/python2.6/site-packages/supybot/plugins/Bash/plugin.py", line 59, in rr
+    irc.reply(self._get_random_quote_for_url(self.random_url))
+TypeError: _get_random_quote_for_url() takes exactly 1 argument (2 given)
+ERROR Exception id: 0xa80a8
+DEBUG Outgoing message: PRIVMSG test :Error: TypeError: _get_random_quote_for_url() takes exactly 1 argument (2 given)
+INFO Shutdown initiated.
+INFO Killing Driver objects.
+INFO Killing Irc objects.
+INFO Shutdown complete.
+DEBUG getopts: {'regexp': <context for regexpMatcher>, 'by': <context for otherUser>}
+DEBUG getoptL: ['regexp=', 'by=']
+CRITICAL Beginning test case Bash.test.BashTestCase.testDocumentation
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+CRITICAL Beginning test case Bash.test.BashTestCase.test_rl
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG Incoming message: :test!user@host.domain.tld PRIVMSG test :rl
+DEBUG findCallbacksForArgs: [(<Bash Bash <Bash.plugin.Bash object at 0x9653a2c>>, ['rl'])]
+DEBUG Spawning thread Thread #1 (for Bash.['rl']) (args: (['rl'], <supybot.callbacks.NestedCommandsIrcProxy object at 0x967f20c>, IrcMsg(prefix="test!user@host.domain.tld", command="PRIVMSG", args=('test', 'rl')), []))
+DEBUG Spawning thread "Thread #1 (for Bash.['rl'])".
+INFO rl called by "test!user@host.domain.tld".
+DEBUG State before call: State(args=[], kwargs={}, channel=None)
+DEBUG Outgoing message: PRIVMSG test :"#928788 +(288)- [X]R4V: I really want to learn some C++\r\nR4V: but the problem is\r\nR4V: that there seems to be months of learning\r\nR4V: before you can do ANYTHING usefull.\r\nShrum: it's kind of like a highschool girlfriend\n"
+CRITICAL Beginning test case Bash.test.BashTestCase.test_rr
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG Incoming message: :test!user@host.domain.tld PRIVMSG test :rr
+DEBUG findCallbacksForArgs: [(<Bash Bash <Bash.plugin.Bash object at 0xb72a29cc>>, ['rr'])]
+DEBUG Spawning thread Thread #2 (for Bash.['rr']) (args: (['rr'], <supybot.callbacks.NestedCommandsIrcProxy object at 0x96e702c>, IrcMsg(prefix="test!user@host.domain.tld", command="PRIVMSG", args=('test', 'rr')), []))
+DEBUG Spawning thread "Thread #2 (for Bash.['rr'])".
+INFO rr called by "test!user@host.domain.tld".
+DEBUG State before call: State(args=[], kwargs={}, channel=None)
+DEBUG Outgoing message: PRIVMSG test :'#96 +(1304)- [X]<VIVI> Xbox already has the following games:\r\n<VIVI> Microsoft Word\r\n<VIVI> Microsoft Excel\r\n<VIVI> Solitaire\n'
+INFO Shutdown initiated.
+INFO Killing Driver objects.
+INFO Killing Irc objects.
+INFO Shutdown complete.
+DEBUG getopts: {'regexp': <context for regexpMatcher>, 'by': <context for otherUser>}
+DEBUG getoptL: ['regexp=', 'by=']
+CRITICAL Beginning test case Bash.test.BashTestCase.testDocumentation
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+CRITICAL Beginning test case Bash.test.BashTestCase.test_rl
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG Incoming message: :test!user@host.domain.tld PRIVMSG test :rl
+DEBUG findCallbacksForArgs: [(<Bash Bash <Bash.plugin.Bash object at 0x8fa6a0c>>, ['rl'])]
+DEBUG Spawning thread Thread #1 (for Bash.['rl']) (args: (['rl'], <supybot.callbacks.NestedCommandsIrcProxy object at 0x8fd218c>, IrcMsg(prefix="test!user@host.domain.tld", command="PRIVMSG", args=('test', 'rl')), []))
+DEBUG Spawning thread "Thread #1 (for Bash.['rl'])".
+INFO rl called by "test!user@host.domain.tld".
+DEBUG State before call: State(args=[], kwargs={}, channel=None)
+DEBUG Outgoing message: PRIVMSG test :'#928788 +(288)- [X]R4V: I really want to learn some C++\r'
+CRITICAL Beginning test case Bash.test.BashTestCase.test_rr
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG Incoming message: :test!user@host.domain.tld PRIVMSG test :rr
+DEBUG findCallbacksForArgs: [(<Bash Bash <Bash.plugin.Bash object at 0xb71b820c>>, ['rr'])]
+DEBUG Spawning thread Thread #2 (for Bash.['rr']) (args: (['rr'], <supybot.callbacks.NestedCommandsIrcProxy object at 0xb6f1f68c>, IrcMsg(prefix="test!user@host.domain.tld", command="PRIVMSG", args=('test', 'rr')), []))
+DEBUG Spawning thread "Thread #2 (for Bash.['rr'])".
+INFO rr called by "test!user@host.domain.tld".
+DEBUG State before call: State(args=[], kwargs={}, channel=None)
+DEBUG Outgoing message: PRIVMSG test :#136 +(1600)- [X]<LkTruth1> I am the most intelligence person in this channel.
+INFO Shutdown initiated.
+INFO Killing Driver objects.
+INFO Killing Irc objects.
+INFO Shutdown complete.
+DEBUG getopts: {'regexp': <context for regexpMatcher>, 'by': <context for otherUser>}
+DEBUG getoptL: ['regexp=', 'by=']
+CRITICAL Beginning test case Bash.test.BashTestCase.testDocumentation
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+CRITICAL Beginning test case Bash.test.BashTestCase.test_rl
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG Incoming message: :test!user@host.domain.tld PRIVMSG test :rl
+DEBUG findCallbacksForArgs: [(<Bash Bash <Bash.plugin.Bash object at 0x94309ac>>, ['rl'])]
+DEBUG Spawning thread Thread #1 (for Bash.['rl']) (args: (['rl'], <supybot.callbacks.NestedCommandsIrcProxy object at 0x945c22c>, IrcMsg(prefix="test!user@host.domain.tld", command="PRIVMSG", args=('test', 'rl')), []))
+DEBUG Spawning thread "Thread #1 (for Bash.['rl'])".
+INFO rl called by "test!user@host.domain.tld".
+DEBUG State before call: State(args=[], kwargs={}, channel=None)
+DEBUG Outgoing message: PRIVMSG test :'#928788 +(290)- [X]R4V: I really want to learn some C++\r'
+CRITICAL Beginning test case Bash.test.BashTestCase.test_rr
+CRITICAL Threads: MainThread
+DEBUG Outgoing message: NICK :test
+DEBUG Outgoing message: USER supybot 0 * :Supybot 0.83.4.1
+DEBUG getopts: {'private': None}
+DEBUG getoptL: ['private']
+DEBUG getopts: {'on': <context for something>, 'from': <context for something>, 'regexp': <context for regexpMatcher>, 'without': <context for something>, 'in': <context for callerInGivenChannel>, 'nolimit': None, 'with': <context for something>}
+DEBUG getoptL: ['on=', 'from=', 'regexp=', 'without=', 'in=', 'nolimit', 'with=']
+DEBUG getopts: {'remove': None}
+DEBUG getoptL: ['remove']
+DEBUG getopts: {'deprecated': None}
+DEBUG getoptL: ['deprecated']
+DEBUG Incoming message: :test!user@host.domain.tld PRIVMSG test :rr
+DEBUG findCallbacksForArgs: [(<Bash Bash <Bash.plugin.Bash object at 0xb6f2834c>>, ['rr'])]
+DEBUG Spawning thread Thread #2 (for Bash.['rr']) (args: (['rr'], <supybot.callbacks.NestedCommandsIrcProxy object at 0xb6f2828c>, IrcMsg(prefix="test!user@host.domain.tld", command="PRIVMSG", args=('test', 'rr')), []))
+DEBUG Spawning thread "Thread #2 (for Bash.['rr'])".
+INFO rr called by "test!user@host.domain.tld".
+DEBUG State before call: State(args=[], kwargs={}, channel=None)
+DEBUG Outgoing message: PRIVMSG test :"#4151 +(84)- [X]<BucWork> dude; 2pac isn't dead\r"
+INFO Shutdown initiated.
+INFO Killing Driver objects.
+INFO Killing Irc objects.
+INFO Shutdown complete.
