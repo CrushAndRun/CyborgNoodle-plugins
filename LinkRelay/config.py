@@ -53,20 +53,27 @@ class ColorNumber(registry.String):
             self.error()
             return
         self.setValue(s)
-ColorNumber = internationalizeDocstring(ColorNumber)
+try:
+    ColorNumber = internationalizeDocstring(ColorNumber)
+except TypeError:
+    # Pypy
+    pass
 
 
 LinkRelay = conf.registerPlugin('LinkRelay')
 conf.registerChannelValue(LinkRelay, 'color',
-    registry.Boolean(False, _("""Determines whether the bot will color Relayed
+    registry.Boolean(True, _("""Determines whether the bot will color Relayed
     PRIVMSGs so as to make the messages easier to read.""")))
 conf.registerChannelValue(LinkRelay, 'topicSync',
     registry.Boolean(True, _("""Determines whether the bot will synchronize
     topics between networks in the channels it Relays.""")))
 conf.registerChannelValue(LinkRelay, 'hostmasks',
-    registry.Boolean(False, _("""Determines whether the bot will Relay the
+    registry.Boolean(True, _("""Determines whether the bot will Relay the
     hostmask of the person joining or parting the channel when he or she joins
     or parts.""")))
+conf.registerChannelValue(LinkRelay, 'nicks',
+    registry.Boolean(True, _("""Determines whether the bot will relay the
+    nick of the person sending a message.""")))
 conf.registerChannelValue(LinkRelay, 'includeNetwork',
     registry.Boolean(True, _("""Determines whether the bot will include the
     network in Relayed PRIVMSGs; if you're only Relaying between two networks,

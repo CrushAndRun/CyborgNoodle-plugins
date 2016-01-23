@@ -35,20 +35,22 @@ from supybot.commands import *
 import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
-from supybot.i18n import PluginInternationalization, internationalizeDocstring
 
-_ = PluginInternationalization('Iwant')
+try:
+    from supybot.i18n import PluginInternationalization
+    from supybot.i18n import internationalizeDocstring
+    _ = PluginInternationalization('Iwant')
+except:
+    # This are useless functions that's allow to run the plugin on a bot
+    # without the i18n plugin
+    _ = lambda x:x
+    internationalizeDocstring = lambda x:x
 
 def unserialize(string):
-    list = string.replace('||', '|').split(' | ')
-    if '' in list:
-        list.remove('')
-    return list
+    return string
 
 def serialize(list):
-    if '' in list:
-        list.remove('')
-    return ' | '.join([x.replace('|', '||') for x in list])
+    return list
 
 @internationalizeDocstring
 class Iwant(callbacks.Plugin):
@@ -68,7 +70,7 @@ class Iwant(callbacks.Plugin):
         wishlist.append(thing)
         self.setRegistryValue('wishlist', serialize(wishlist), channel)
         irc.replySuccess()
-    iwant = wrap(iwant, ['channel', 'something'])
+    iwant = wrap(iwant, ['channel', 'text'])
 
     @internationalizeDocstring
     def list(self, irc, msg, args, channel):
@@ -110,10 +112,25 @@ class Iwant(callbacks.Plugin):
             irc.error(_('No wish for the moment.'))
             return
         indexes = range(1, len(wishlist) + 1)
-        wishlist_with_index = zip(indexes, wishlist)
+        wishlist_with_index = list(zip(indexes, wishlist))
         wish = random.sample(wishlist_with_index, 1)[0]
         irc.reply(_('Wish #%i is %s.') % wish)
     random = wrap(random, ['channel'])
+
+    @internationalizeDocstring
+    def delete(self, irc, msg, args, channel, id):
+        """[<channel>] <id>
+
+        Deletes the thing number <id>. <channel> is only needed if you
+        don't send the message on the channel itself."""
+        wishlist = unserialize(self.registryValue('wishlist', channel))
+        if len(wishlist) < id:
+            irc.error(_('No thing has this id.'))
+            return
+        thing = wishlist.pop(id - 1)
+        self.setRegistryValue('wishlist', serialize(wishlist), channel)
+        irc.reply(_('Successfully deleted: %s') % thing)
+    delete = wrap(delete, ['channel', 'id'])
 
 
 Class = Iwant

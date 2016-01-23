@@ -2,6 +2,7 @@
 # by SpiderDave
 ###
 
+import supybot.conf as conf
 import supybot.utils as utils
 from supybot.commands import *
 import supybot.plugins as plugins
@@ -14,8 +15,6 @@ PluginName=os.path.dirname( __file__ ).split(os.sep)[-1]
 class _Plugin(callbacks.Plugin):
     """This plugin generates a random superhero description for the given nick."""
     threaded = True
-    plugin_path=os.path.dirname( __file__ ) + os.sep
-    data_path=plugin_path + 'data' + os.sep
     # **********************************************************************
     # Note: the superhero text is saved in a text file so that each nick gives 
     # the same unique power.  I think it's more fun this way.
@@ -27,15 +26,20 @@ class _Plugin(callbacks.Plugin):
         if not name:
             name = msg.nick
 
-        try:
-            os.makedirs('%s' % self.data_path)
-        except OSError:
-            pass
+
+        filename = conf.supybot.directories.data.dirize("superhero.txt")
+        f=open(filename,'a+b')
+        f.close()
+        f=open(filename,'r+b')
+        superhero=f.readlines()
+
+
 
         try:
-            f=open('%ssuperhero.txt' % self.data_path, 'a+b')
+            filename = conf.supybot.directories.data.dirize("superhero.txt")
+            f=open(filename,'a+b')
             f.close()
-            f=open('%ssuperhero.txt' % self.data_path, 'r+b')
+            f=open(filename,'r+b')
             superhero=f.readlines()
         except:
             irc.reply('error :(')

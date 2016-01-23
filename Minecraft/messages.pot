@@ -1,0 +1,127 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2014-06-10 22:54+CEST\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: ENCODING\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: config.py:43
+msgid ""
+"Do you want to use list mode instead colorful mode?\n"
+"             (colorful mode uses color per service, list mode prints\n"
+"              two list, one with the onlines other with the offlines)"
+msgstr ""
+
+#: config.py:48
+msgid "Do you want the plugin banner to be bold?"
+msgstr ""
+
+#: config.py:53
+msgid ""
+"Use two lists of services (online and offline) to output\n"
+"    minimal colors."
+msgstr ""
+
+#: config.py:57
+msgid "Use bold plugin banner."
+msgstr ""
+
+#: plugin.py:57
+#, docstring
+msgid ""
+"Gets Minecraft/Mojang servers status (login, sesion, auth, ...).\n"
+"    Gets info from a Minecraft server (users, name, ...)."
+msgstr ""
+
+#: plugin.py:62
+msgid "Account web"
+msgstr ""
+
+#: plugin.py:62
+msgid "Website"
+msgstr ""
+
+#: plugin.py:63
+msgid "Legacy Login"
+msgstr ""
+
+#: plugin.py:63
+msgid "Legacy Session"
+msgstr ""
+
+#: plugin.py:64
+msgid "Legacy Auth"
+msgstr ""
+
+#: plugin.py:64
+msgid "Skin server"
+msgstr ""
+
+#: plugin.py:65
+msgid "Auth server"
+msgstr ""
+
+#: plugin.py:65
+msgid "Session server"
+msgstr ""
+
+#: plugin.py:66
+msgid "API"
+msgstr ""
+
+#: plugin.py:66
+msgid "Textures"
+msgstr ""
+
+#: plugin.py:85
+#, docstring
+msgid ""
+"<host|host:port>\n"
+"        Asks for Minecraft server information. Host can be a domain or an IP."
+msgstr ""
+
+#: plugin.py:98
+msgid "Invalid port."
+msgstr ""
+
+#: plugin.py:114
+msgid "Server error or not a Minecraft server."
+msgstr ""
+
+#: plugin.py:123
+msgid "%s - %s/%s players"
+msgstr ""
+
+#: plugin.py:126
+msgid "%s\017 - %s - %s/%s players"
+msgstr ""
+
+#: plugin.py:132
+msgid "Couldn't connect to server."
+msgstr ""
+
+#: plugin.py:137
+#, docstring
+msgid ""
+"takes no arguments\n"
+"        Shows the status of the Minecraft/Mojang servers."
+msgstr ""
+
+#: plugin.py:147
+msgid "Minecraft Status"
+msgstr ""
+
+#: plugin.py:200
+msgid "%s Status checker is down! Maybe other Minecraft/Mojang services are affected too."
+msgstr ""
+
